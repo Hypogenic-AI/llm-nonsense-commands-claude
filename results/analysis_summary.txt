@@ -1,0 +1,47 @@
+======================================================================
+ANALYSIS REPORT: LLM Understanding of Nonsense Commands
+======================================================================
+
+## KEY FINDINGS
+
+1. PERPLEXITY-QUALITY CORRELATION
+   Spearman r = -0.6048
+   P-value = 0.000000
+   → Significant NEGATIVE correlation: higher perplexity = lower explanation quality
+
+2. GROUP DIFFERENCES (Kruskal-Wallis)
+   H-statistic = 52.1885
+   P-value = 0.000000
+   → Significant differences in quality across prompt categories
+
+3. NORMAL vs RANDOM PROMPTS (Mann-Whitney U)
+   Effect size = -0.850
+   P-value = 0.000358
+
+4. SELF-AWARENESS
+   Normal prompts correctly identified: 100.0%
+   Random prompts correctly identified: 100.0%
+
+## CATEGORY STATISTICS
+
+normal:
+  Mean perplexity: 44.4
+  Mean quality: 9.00 (±0.47)
+slightly_odd:
+  Mean perplexity: 309.8
+  Mean quality: 8.30 (±0.48)
+broken_grammar:
+  Mean perplexity: 2893.4
+  Mean quality: 8.50 (±0.53)
+word_salad:
+  Mean perplexity: 53370.4
+  Mean quality: 7.30 (±0.48)
+adversarial_like:
+  Mean perplexity: 1909.3
+  Mean quality: 6.70 (±0.48)
+token_soup:
+  Mean perplexity: 10497.3
+  Mean quality: 6.40 (±0.52)
+pure_random:
+  Mean perplexity: 501.9
+  Mean quality: 7.60 (±0.84)

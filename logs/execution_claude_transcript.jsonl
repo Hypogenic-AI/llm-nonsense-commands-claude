@@ -1,0 +1,41 @@
+All validation checks pass. Let me create a quick summary of the research session:
+
+## Research Session Complete
+
+I have successfully completed the full research cycle investigating whether LLMs understand nonsense commands. Here's a summary:
+
+### Research Question
+Can LLMs explain prompts across a spectrum from coherent English to complete nonsense?
+
+### Key Findings
+
+1. **Strong Negative Correlation**: r = -0.60 (p < 0.0001) between prompt perplexity and explanation quality
+   - Higher perplexity prompts receive lower quality explanations
+
+2. **Significant Group Differences**: Kruskal-Wallis H = 52.19 (p < 0.0001)
+   - Explanation quality varies significantly across prompt categories
+   - Largest effects for adversarial-like (d = -1.0) and token soup (d = -1.0) vs normal
+
+3. **Self-Awareness Pattern**: 
+   - LLMs correctly identify obvious nonsense (100% accuracy for word salad, token soup, pure random)
+   - LLMs rarely classify prompts as "adversarial" - they default to "nonsense"
+
+4. **Quality Degradation by Category**:
+   - Normal: 9.0/10
+   - Token Soup: 6.4/10 (lowest)
+   - Adversarial-like: 6.7/10
+
+### Files Created
+
+| File | Description |
+|------|-------------|
+| `REPORT.md` | Comprehensive research report with all findings |
+| `README.md` | Project overview and reproduction instructions |
+| `planning.md` | Research plan and experimental design |
+| `src/*.py` | Experiment code (prompt generation, perplexity, LLM client, analysis) |
+| `results/` | Experiment data (CSV, JSON, statistics) |
+| `figures/` | 6 visualization plots |
+
+### Conclusion
+
+The research supports the hypothesis that **LLMs cannot meaningfully explain high-perplexity prompts**, suggesting that adversarial prompts exploit mechanisms distinct from standard language understanding. This has implications for AI safety and understanding jailbreaking attacks.

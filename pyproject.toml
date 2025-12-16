@@ -1,0 +1,23 @@
+[project]
+name = "research-workspace"
+version = "0.1.0"
+description = "Research workspace for LLM nonsense commands experiments"
+requires-python = ">=3.9"
+dependencies = [
+    "pandas",
+    "numpy",
+    "matplotlib",
+    "scipy",
+    "openai",
+    "requests",
+    "tqdm",
+    "seaborn",
+    "transformers",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

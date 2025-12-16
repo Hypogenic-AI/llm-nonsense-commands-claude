@@ -1,0 +1,25 @@
+{
+  "model_tested": "openai/gpt-4o-mini",
+  "model_judge": "openai/gpt-4o-mini",
+  "samples_per_category": 10,
+  "categories": [
+    "normal",
+    "slightly_odd",
+    "broken_grammar",
+    "word_salad",
+    "adversarial_like",
+    "token_soup",
+    "pure_random"
+  ],
+  "category_descriptions": {
+    "normal": "Standard English questions - coherent and grammatical",
+    "slightly_odd": "Grammatically correct but semantically nonsensical",
+    "broken_grammar": "Real words but scrambled word order",
+    "word_salad": "Real words with no grammatical or semantic structure",
+    "adversarial_like": "Mimics GCG-style adversarial suffixes",
+    "token_soup": "Mix of words, numbers, and special characters",
+    "pure_random": "Completely random characters and symbols"
+  },
+  "total_prompts": 70,
+  "timestamp": "2025-12-16T02:58:51.843945"
+}

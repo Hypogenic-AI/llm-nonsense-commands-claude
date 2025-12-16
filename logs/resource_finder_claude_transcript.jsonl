@@ -1,0 +1,42 @@
+All deliverables are in place. Let me provide a final summary.
+
+---
+
+## Resource Finding Phase Complete
+
+I have completed the resource gathering for the research topic **"Do LLMs Understand Nonsense Commands?"**
+
+### Deliverables Summary
+
+| Category | Count | Location |
+|----------|-------|----------|
+| **Papers** | 8 PDFs | `papers/` |
+| **Datasets** | 3 CSV files | `datasets/` |
+| **Code Repositories** | 4 repos | `code/` |
+| **Documentation** | 2 files | root directory |
+
+### Key Resources
+
+**Most Relevant Paper**: "Talking Nonsense: Probing Large Language Models' Understanding of Adversarial Gibberish Inputs" (arXiv:2404.17120) - directly addresses whether LLMs understand their own "gibberish language"
+
+**Primary Dataset**: AdvBench (520 harmful behaviors) - standard benchmark for jailbreak evaluation
+
+**Primary Code**: `llm-attacks` repository - GCG implementation for generating high-perplexity adversarial suffixes
+
+### Key Finding from Literature Review
+
+The research hypothesis is **strongly supported** by existing literature:
+- LLMs can be manipulated by nonsensical "LM Babel" prompts to produce any target text
+- These prompts are fragile (removing one token breaks them)
+- Generating harmful text is NOT harder than benign text with aligned models
+- This suggests jailbreaking exploits token prediction, not semantic comprehension
+
+### Files Created
+- `literature_review.md` - Comprehensive review of 8 papers
+- `resources.md` - Complete catalog of all resources
+- `papers/README.md` - Paper descriptions
+- `datasets/README.md` - Dataset documentation with download instructions
+- `code/README.md` - Repository usage guide
+- `.resource_finder_complete` - Completion marker
+
+The experiment runner can now use these resources to conduct automated experimentation on whether LLMs can explain/interpret nonsense prompts.

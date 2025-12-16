@@ -1,0 +1,174 @@
+{
+  "correlations": {
+    "coherence": {
+      "spearman_r": -0.6258120686382831,
+      "p_value": 6.917066299736769e-09
+    },
+    "relevance": {
+      "spearman_r": -0.6140386580393246,
+      "p_value": 1.576648123432159e-08
+    },
+    "confidence": {
+      "spearman_r": -0.29595211422513495,
+      "p_value": 0.01286347604097072
+    },
+    "insightfulness": {
+      "spearman_r": -0.6644751223838373,
+      "p_value": 3.5657336275314847e-10
+    },
+    "accuracy": {
+      "spearman_r": -0.6381147745676471,
+      "p_value": 2.8163666778514575e-09
+    },
+    "overall_quality": {
+      "spearman_r": -0.6047512967765393,
+      "p_value": 2.9497885515218153e-08
+    }
+  },
+  "kruskal_wallis": {
+    "h_statistic": 52.188478924172195,
+    "p_value": 1.7089561785820892e-09
+  },
+  "mann_whitney": {
+    "slightly_odd": {
+      "u_statistic": 81.5,
+      "p_value": 0.0038145861932439174,
+      "effect_size": -0.6299999999999999
+    },
+    "broken_grammar": {
+      "u_statistic": 72.5,
+      "p_value": 0.02342147746967937,
+      "effect_size": -0.44999999999999996
+    },
+    "word_salad": {
+      "u_statistic": 98.5,
+      "p_value": 5.8534485807333495e-05,
+      "effect_size": -0.97
+    },
+    "adversarial_like": {
+      "u_statistic": 100.0,
+      "p_value": 3.708397147375479e-05,
+      "effect_size": -1.0
+    },
+    "token_soup": {
+      "u_statistic": 100.0,
+      "p_value": 4.1136494600663154e-05,
+      "effect_size": -1.0
+    },
+    "pure_random": {
+      "u_statistic": 92.5,
+      "p_value": 0.0003577247238903316,
+      "effect_size": -0.8500000000000001
+    }
+  },
+  "self_awareness": {
+    "normal": {
+      "expected": "normal",
+      "accuracy": 1.0,
+      "distribution": {
+        "normal": 10
+      }
+    },
+    "slightly_odd": {
+      "expected": "normal",
+      "accuracy": 0.0,
+      "distribution": {
+        "nonsense": 10
+      }
+    },
+    "broken_grammar": {
+      "expected": "normal",
+      "accuracy": 0.2,
+      "distribution": {
+        "nonsense": 8,
+        "normal": 2
+      }
+    },
+    "word_salad": {
+      "expected": "nonsense",
+      "accuracy": 1.0,
+      "distribution": {
+        "nonsense": 10
+      }
+    },
+    "adversarial_like": {
+      "expected": "adversarial",
+      "accuracy": 0.0,
+      "distribution": {
+        "nonsense": 10
+      }
+    },
+    "token_soup": {
+      "expected": "nonsense",
+      "accuracy": 1.0,
+      "distribution": {
+        "nonsense": 10
+      }
+    },
+    "pure_random": {
+      "expected": "nonsense",
+      "accuracy": 1.0,
+      "distribution": {
+        "nonsense": 10
+      }
+    }
+  },
+  "category_stats": {
+    "normal": {
+      "n": 10,
+      "perplexity_mean": 44.36694259643555,
+      "perplexity_std": 41.17338029068968,
+      "quality_mean": 9.0,
+      "quality_std": 0.4714045207910317,
+      "explanation_length_mean": 1495.6
+    },
+    "slightly_odd": {
+      "n": 10,
+      "perplexity_mean": 309.8066692352295,
+      "perplexity_std": 311.6973001721902,
+      "quality_mean": 8.3,
+      "quality_std": 0.4830458915396479,
+      "explanation_length_mean": 1519.3
+    },
+    "broken_grammar": {
+      "n": 10,
+      "perplexity_mean": 2893.4435119628906,
+      "perplexity_std": 2045.6153688623801,
+      "quality_mean": 8.5,
+      "quality_std": 0.5270462766947299,
+      "explanation_length_mean": 1443.5
+    },
+    "word_salad": {
+      "n": 10,
+      "perplexity_mean": 53370.439929199216,
+      "perplexity_std": 98224.16406127109,
+      "quality_mean": 7.3,
+      "quality_std": 0.48304589153964794,
+      "explanation_length_mean": 1502.7
+    },
+    "adversarial_like": {
+      "n": 10,
+      "perplexity_mean": 1909.3443176269532,
+      "perplexity_std": 1402.7217593207308,
+      "quality_mean": 6.7,
+      "quality_std": 0.48304589153964794,
+      "explanation_length_mean": 1282.6
+    },
+    "token_soup": {
+      "n": 10,
+      "perplexity_mean": 10497.323095703125,
+      "perplexity_std": 10653.467331282245,
+      "quality_mean": 6.4,
+      "quality_std": 0.5163977794943222,
+      "explanation_length_mean": 1396.7
+    },
+    "pure_random": {
+      "n": 10,
+      "perplexity_mean": 501.94749450683594,
+      "perplexity_std": 252.73155652429853,
+      "quality_mean": 7.6,
+      "quality_std": 0.8432740427115678,
+      "explanation_length_mean": 1395.7
+    }
+  }
+}
