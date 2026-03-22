@@ -1,0 +1,29 @@
+idea:
+  title: Do LLMs Understand Nonsense Commands?
+  domain: nlp
+  hypothesis: 'Large language models may not be able to explain or interpret prompts
+    that are optimized to produce outputs with high perplexity or that do not resemble
+    English, suggesting that directed jailbreaks are difficult to find and may not
+    be explainable by the models in the same way as natural language prompts.
+
+    '
+  background:
+    description: 'A simple idea:
+
+      Find a prompt that does something specific, for instance, causes the model to
+      write a poem that doesn''t look anything like English. Use prompt optimization
+      with a specific focus on increasing the perplexity of prompt. Ask the model
+      to explain its prompt. Study. Will models be able to explain prompts the way
+      they can English? Or are these prompts hard to find and jailbreaking is just
+      a special case, but a directed jailbreak is hard to find?
+
+      '
+  metadata:
+    author: Ari Holtzman
+    source: IdeaHub
+    source_url: https://hypogenic.ai/ideahub/idea/QnPYsHR9aQDCkAc64amN
+    idea_id: do_llms_understand_nonsense_co_20260322_030755_07e775dd
+    created_at: '2026-03-22T03:07:55.441584'
+    status: submitted
+    github_repo_name: llm-nonsense-commands-claude
+    github_repo_url: https://github.com/Hypogenic-AI/llm-nonsense-commands-claude
