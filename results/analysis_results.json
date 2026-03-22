@@ -1,0 +1,94 @@
+{
+  "correlation": {
+    "spearman_rho": -0.001706824212229647,
+    "spearman_p": 0.9916601893093265,
+    "pearson_r": -0.1815326637790583,
+    "pearson_p": 0.26226561831644474
+  },
+  "kruskal_wallis": {
+    "H": 14.955552869116705,
+    "p": 0.004794296810165772
+  },
+  "pairwise_tests": [
+    {
+      "cat1": "natural",
+      "cat2": "obfuscated",
+      "U": 50.5,
+      "p": 0.04505635380146352,
+      "effect_r": -0.578125,
+      "significant_bonf": "False"
+    },
+    {
+      "cat1": "natural",
+      "cat2": "jailbreak",
+      "U": 47.0,
+      "p": 0.10324607002559277,
+      "effect_r": -0.46875,
+      "significant_bonf": "False"
+    },
+    {
+      "cat1": "natural",
+      "cat2": "gcg_suffix",
+      "U": 46.0,
+      "p": 0.13121041451299884,
+      "effect_r": -0.4375,
+      "significant_bonf": "False"
+    },
+    {
+      "cat1": "natural",
+      "cat2": "random",
+      "U": 20.0,
+      "p": 0.07598237857716891,
+      "effect_r": 0.375,
+      "significant_bonf": "False"
+    },
+    {
+      "cat1": "obfuscated",
+      "cat2": "jailbreak",
+      "U": 30.0,
+      "p": 0.8636256398220312,
+      "effect_r": 0.0625,
+      "significant_bonf": "False"
+    },
+    {
+      "cat1": "obfuscated",
+      "cat2": "gcg_suffix",
+      "U": 28.5,
+      "p": 0.7385715218965976,
+      "effect_r": 0.109375,
+      "significant_bonf": "False"
+    },
+    {
+      "cat1": "obfuscated",
+      "cat2": "random",
+      "U": 4.0,
+      "p": 0.0012683353936095855,
+      "effect_r": 0.875,
+      "significant_bonf": "True"
+    },
+    {
+      "cat1": "jailbreak",
+      "cat2": "gcg_suffix",
+      "U": 31.0,
+      "p": 0.955966571005364,
+      "effect_r": 0.03125,
+      "significant_bonf": "False"
+    },
+    {
+      "cat1": "jailbreak",
+      "cat2": "random",
+      "U": 8.0,
+      "p": 0.0041476751667831185,
+      "effect_r": 0.75,
+      "significant_bonf": "True"
+    },
+    {
+      "cat1": "gcg_suffix",
+      "cat2": "random",
+      "U": 8.0,
+      "p": 0.004374760902589797,
+      "effect_r": 0.75,
+      "significant_bonf": "True"
+    }
+  ]
+}

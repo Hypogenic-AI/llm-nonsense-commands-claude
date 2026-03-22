@@ -1,0 +1,9 @@
+{
+  "seed": 42,
+  "model": "gpt-4.1",
+  "perplexity_model": "gpt2",
+  "n_prompts": 40,
+  "n_directed_trials": 30,
+  "total_tokens": 38140,
+  "timestamp": "2026-03-22T03:48:14.015897"
+}

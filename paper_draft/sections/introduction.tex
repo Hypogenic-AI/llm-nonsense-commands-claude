@@ -1,0 +1,19 @@
+\section{Introduction}
+\label{sec:intro}
+
+Adversarial suffixes---strings like \texttt{== interface Manuel WITH steps instead sentences :)izzle}---can bypass safety training in large language models, causing them to comply with harmful requests \citep{zou2023universal}. These prompts have extremely high perplexity and appear as pure gibberish to human readers. But can the models themselves explain \emph{what these prompts mean}?
+
+This question goes beyond whether LLMs \emph{respond} to nonsense. Prior work has extensively studied adversarial attack success rates \citep{zou2023universal, zhu2023autodan}, perplexity-based detection \citep{alon2023detecting, jain2023baseline}, and the hidden structure of adversarial prompts \citep{cherepanova2024talking}. However, no study has systematically asked whether models can \emph{interpret} the very prompts that manipulate them. If a model follows a prompt it cannot explain, this reveals a fundamental gap between text-generation capability and semantic comprehension---with direct implications for alignment robustness.
+
+We address this gap by measuring self-explanation ability across a controlled perplexity spectrum. We construct a dataset of 40~prompts in five categories---natural language, obfuscated text, human-crafted jailbreaks, \gcg adversarial suffixes, and random token strings---and evaluate \gptfour on three tasks per prompt: execution, self-explanation, and quality judgment.
+
+{\bf Our key finding is a U-shaped explanation quality pattern}, not the monotonic decrease one might expect. Natural language receives high explanation scores (4.5/5), and pure random tokens receive \emph{perfect} scores (5.0/5) because the model correctly meta-recognizes them as meaningless. The lowest scores (3.6--3.75/5) occur for prompts with \emph{partial structure}: \gcg suffixes, obfuscated text, and human jailbreaks. These prompts have enough structure to trigger confabulated interpretations but too little for genuine understanding. This \uncannyvalley of comprehension is precisely where adversarial attacks operate, and where safety training is most brittle.
+
+We additionally find that 5 of 8~\gcg suffixes cause \gptfour to produce compliant responses---sometimes in unexpected languages like Malay and Spanish---driven by cross-lingual trigger tokens discovered through gradient optimization. A directed nonsense search over 60~random token sequences shows that high-perplexity prompts almost never direct models to specific tasks (5\% success rate), confirming that gradient-based optimization is essential for crafting effective adversarial prompts.
+
+Our contributions are:
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=0pt]
+    \item We conduct the first systematic evaluation of LLM self-explanation ability across a perplexity spectrum, revealing a U-shaped quality pattern rather than monotonic decline.
+    \item We identify two distinct explanation mechanisms---understanding and \metarecog---and show that adversarial attacks exploit the gap between them.
+    \item We demonstrate that \gcg suffixes trigger confabulated compliance with cross-lingual response patterns, and that random search cannot replicate this effect ($\leq$5\% success).
+\end{itemize}

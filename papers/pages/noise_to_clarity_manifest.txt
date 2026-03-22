@@ -1,0 +1,10 @@
+PDF: papers/noise_to_clarity.pdf
+Total pages: 15
+Pages per chunk: 3
+
+Chunks:
+  noise_to_clarity_chunk_001.pdf: pages 1-3
+  noise_to_clarity_chunk_002.pdf: pages 4-6
+  noise_to_clarity_chunk_003.pdf: pages 7-9
+  noise_to_clarity_chunk_004.pdf: pages 10-12
+  noise_to_clarity_chunk_005.pdf: pages 13-15

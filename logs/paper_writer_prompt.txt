@@ -1,0 +1,739 @@
+You are an academic paper writer. Generate a complete NEURIPS style paper
+based on the experiment results provided.
+
+════════════════════════════════════════════════════════════════════════════════
+                         IMPORTANT: BEFORE YOU START
+════════════════════════════════════════════════════════════════════════════════
+
+Before writing any content, you MUST complete these steps:
+
+1. READ THE SKILL: Review the paper-writer skill at .claude/skills/paper-writer/SKILL.md
+2. READ THE STYLE GUIDE: Study templates/paper_writing/lab_style_guide.md carefully
+3. REVIEW EXAMPLES: Browse paper_examples/ for formatting and language patterns:
+   - Look at sections/1.introduction.tex for language style
+   - Look at tables/*.tex for table formatting
+   - Look at commands/*.tex for macro usage
+4. VERIFY COMMAND TEMPLATES: Command templates (math.tex, general.tex, macros.tex) are pre-copied to paper_draft/commands/
+
+CRITICAL: Reference example papers for FORMATTING and LANGUAGE STYLE only.
+Do NOT copy content, phrasing, or narrative structure from the example papers.
+The examples are in a different research domain - focus only on presentation style.
+
+════════════════════════════════════════════════════════════════════════════════
+                            EXPERIMENT REPORT
+════════════════════════════════════════════════════════════════════════════════
+
+# Do LLMs Understand Nonsense Commands?
+
+## 1. Executive Summary
+
+We tested whether large language models can explain prompts across a perplexity spectrum, from natural English to GCG adversarial suffixes to random character strings. Our key finding is a **U-shaped explanation quality pattern**: models explain natural language well (score 4.5/5), struggle most with *partially structured* nonsense like GCG suffixes and obfuscated text (score 3.6-3.75/5), and paradoxically excel at explaining pure random tokens (score 5.0/5) by correctly meta-recognizing them as meaningless. This reveals that the hardest prompts for LLMs to interpret are not the most nonsensical, but those with enough structure to trigger confabulated interpretations—precisely the category that adversarial attacks exploit.
+
+## 2. Goal
+
+**Hypothesis**: LLMs cannot meaningfully explain high-perplexity prompts that successfully direct their behavior, and finding such &#34;directed nonsense&#34; is harder for arbitrary tasks than for jailbreaking.
+
+**Why this matters**: If models can be manipulated by prompts they cannot explain, this reveals a fundamental gap between text-generation capability and semantic comprehension, with direct implications for AI safety and alignment robustness.
+
+**Gap filled**: Prior work (Cherepanova &amp; Zou 2024, Zou et al. 2023) studied whether LLMs *respond* to nonsense but never systematically tested whether they can *explain* it. We are the first to measure self-explanation ability across a controlled perplexity spectrum.
+
+## 3. Data Construction
+
+### Dataset Description
+We constructed a dataset of 40 prompts across 5 categories spanning the perplexity spectrum:
+
+| Category | N | Source | Perplexity Range |
+|----------|---|--------|-----------------|
+| Natural language | 8 | Hand-crafted clear English instructions | 26 - 306 |
+| Obfuscated | 8 | Leet-speak, pig-latin, reversed words, telegraphic, key-value | 63 - 3,105 |
+| Human jailbreaks | 8 | ChatGPT jailbreak prompts dataset (Shen et al.) | 39 - 154 |
+| GCG suffixes | 8 | Published GCG examples (Zou et al. 2023) | 477 - 158,892 |
+| Random tokens | 8 | Randomly generated ASCII character strings | 275 - 708 |
+
+### Example Samples
+
+**Natural** (PPL=57): &#34;Write a haiku about a cat sleeping in the sun.&#34;
+
+**Obfuscated** (PPL=335): &#34;etirW a trohs meop tuoba eht naeco gnisu ylno pu-edam sdrow.&#34;
+
+**GCG suffix** (PPL=158,892): &#34;== interface Manuel WITH steps instead sentences :)izzle possiblyWith certainty SureFire&#34;
+
+**Random** (PPL=393): &#34;CiePj#DI\&#34;9A&amp;q__7E7Zymm:2S1Z6g,&#39;;m&#34;
+
+### Perplexity Measurement
+All perplexity values computed using GPT-2 (117M parameters) via HuggingFace Transformers on GPU (NVIDIA RTX A6000).
+
+## 4. Experiment Description
+
+### Methodology
+
+#### High-Level Approach
+For each prompt, we conducted three API calls to GPT-4.1:
+1. **Task execution**: Send the prompt directly and record the response
+2. **Self-explanation**: Ask GPT-4.1 to explain the prompt&#39;s meaning and intent
+3. **Quality judgment**: Use GPT-4.1-as-judge to score explanation quality (1-5) against ground-truth intent
+
+Additionally, we ran a **directed nonsense search**: 60 trials of random token sequences sent to GPT-4.1 to test whether high-perplexity prompts can accidentally direct specific behavior (30 benign, 30 jailbreak-adjacent).
+
+#### Why This Method?
+- GPT-2 perplexity is the standard measure in the adversarial NLP literature (Alon &amp; Kamfonas 2023, Jain et al. 2023)
+- GPT-4.1 is a state-of-the-art model suitable for both following and explaining prompts
+- LLM-as-judge scoring provides standardized evaluation comparable across categories
+
+### Implementation Details
+
+#### Tools and Libraries
+| Library | Version | Purpose |
+|---------|---------|---------|
+| openai | 2.29.0 | GPT-4.1 API calls |
+| transformers | 5.3.0 | GPT-2 perplexity computation |
+| torch | 2.10.0 | GPU-accelerated inference |
+| scipy | 1.17.1 | Statistical tests |
+| pandas | 3.0.1 | Data manipulation |
+| matplotlib | 3.10.8 | Visualization |
+
+#### Hyperparameters
+| Parameter | Value | Rationale |
+|-----------|-------|-----------|
+| Temperature | 0.0 | Deterministic responses for reproducibility |
+| Max tokens (response) | 300 | Sufficient for task completion |
+| Max tokens (explanation) | 400 | Allows detailed explanations |
+| Max tokens (judge) | 200 | Short structured output |
+| Random seed | 42 | Reproducibility |
+
+#### Reproducibility
+- Single run (temperature=0 ensures determinism)
+- Hardware: NVIDIA RTX A6000 (49GB VRAM) x 4
+- Total API tokens used: ~38,140
+- Python 3.12.8
+
+### Raw Results
+
+#### Explanation Quality by Category
+
+| Category | N | Perplexity (median) | Perplexity (IQR) | Explanation Score | Score Median |
+|----------|---|--------------------:|------------------:|------------------:|-------------:|
+| Natural Language | 8 | 56.7 | 44.1 - 98.1 | 4.50 +/- 0.76 | 5.0 |
+| Obfuscated | 8 | 334.6 | 129.3 - 1,220.5 | 3.62 +/- 0.74 | 3.5 |
+| Human Jailbreaks | 8 | 79.0 | 61.7 - 107.5 | 3.75 +/- 0.89 | 3.5 |
+| GCG Suffixes | 8 | 3,493.5 | 919.2 - 4,601.6 | 3.75 +/- 1.04 | 4.0 |
+| Random Tokens | 8 | 392.5 | 321.2 - 546.2 | 5.00 +/- 0.00 | 5.0 |
+
+#### Directed Nonsense Search
+- Benign task (poem): 2/30 (6.7%) produced task-relevant outputs
+- Jailbreak-adjacent: 1/30 (3.3%) produced task-relevant outputs
+- Conclusion: Random high-perplexity prompts almost never direct models to specific tasks
+
+#### GCG Suffix Response Patterns
+A striking observation: 5 out of 8 GCG suffixes caused GPT-4.1 to *follow* the prompt (i.e., attempt to produce relevant output rather than flagging it as nonsense). Several triggered responses in non-English languages:
+- &#34;seterusnya&#34; (Malay for &#34;next&#34;) triggered a response in Malay about LaTeX
+- &#34;anan diese&#34; (mixed German/Indonesian) triggered a response in Spanish about dice tutorials
+- &#34;Jim komentar hier&#34; (mixed Dutch/Indonesian) triggered an attempted helpful response about comments
+
+This suggests GCG suffixes contain cross-lingual trigger tokens that activate language-specific response patterns.
+
+### Visualizations
+
+Key figures saved in `figures/`:
+- `combined_results.png`: Three-panel figure (perplexity distribution, explanation quality, correlation)
+- `u_shape_explanation.png`: Bar chart highlighting the U-shaped explanation quality pattern
+- `perplexity_vs_explanation.png`: Scatter plot of perplexity vs. explanation quality
+
+## 5. Result Analysis
+
+### Key Findings
+
+**Finding 1: U-Shaped Explanation Quality (Not Monotonic)**
+Contrary to hypothesis H1 (monotonic decrease), explanation quality shows a U-shape. The *lowest* scores are for prompts with *partial structure* (obfuscated: 3.62, jailbreaks: 3.75, GCG: 3.75), while both natural language (4.50) and pure random (5.00) score high. The model struggles most with prompts in the &#34;uncanny valley&#34; of language-like structure.
+
+**Finding 2: Meta-Recognition vs. Understanding**
+Random tokens receive perfect explanation scores (5.0) not because the model &#34;understands&#34; them, but because it correctly *meta-recognizes* them as meaningless: &#34;This appears to be a random string of characters.&#34; This reveals two distinct explanation mechanisms:
+- **Understanding**: Parsing semantic content (works for natural language)
+- **Meta-recognition**: Identifying content as nonsensical (works for pure random)
+
+GCG suffixes fall between these mechanisms: too structured for clean meta-recognition, too nonsensical for genuine understanding. The model *confabulates* partial interpretations.
+
+**Finding 3: GCG Suffixes Trigger Confabulated Compliance**
+5/8 GCG suffixes caused GPT-4.1 to attempt to follow the prompt rather than flag it as nonsense. The model produced responses in Malay, Spanish, and English, interpreting trigger tokens (&#34;seterusnya&#34;, &#34;tikzpicture&#34;, &#34;tutorial&#34;) as genuine requests. When asked to explain these prompts, the model&#39;s explanations were partially correct (identifying individual tokens) but missed the adversarial nature.
+
+**Finding 4: Directed Nonsense Is Extremely Hard to Find**
+Random search produced task-relevant outputs in only 5% of trials, confirming that finding prompts with both high perplexity AND directed behavior requires gradient-based optimization (GCG), not random search. Jailbreaking is a special case enabled by specific optimization against alignment training, not a general property of the prompt space.
+
+### Hypothesis Testing Results
+
+**H1: Explanation quality decreases with perplexity**
+- **Result**: NOT SUPPORTED in simple form
+- Spearman rho = -0.002, p = 0.992 (no linear correlation)
+- However, the Kruskal-Wallis test shows significant differences across categories (H = 14.96, p = 0.005)
+- The relationship is U-shaped, not monotonic
+
+**H2: Models cannot explain prompts they follow**
+- **Result**: PARTIALLY SUPPORTED
+- For GCG suffixes the model follows (5/8), explanation scores average 3.6/5
+- The model provides *plausible-sounding but incomplete* explanations, identifying surface tokens while missing adversarial intent
+- For natural language, followed prompts get 4.5/5 explanation scores
+
+**H3: Directed nonsense is harder for benign than jailbreak tasks**
+- **Result**: INCONCLUSIVE with random search
+- Both benign (6.7%) and jailbreak (3.3%) random prompts rarely produced directed outputs
+- This suggests directed nonsense requires gradient-based optimization in both cases
+- The literature shows GCG achieves 35-81% success rates (Cherepanova &amp; Zou 2024), confirming optimization is essential
+
+### Statistical Tests
+
+| Test | Statistic | p-value | Interpretation |
+|------|-----------|---------|----------------|
+| Kruskal-Wallis (all categories) | H = 14.96 | 0.005 | Significant differences across categories |
+| Mann-Whitney: obfuscated vs random | U = 4.0 | 0.001 | Random significantly higher (Bonferroni-significant) |
+| Mann-Whitney: jailbreak vs random | U = 8.0 | 0.004 | Random significantly higher (Bonferroni-significant) |
+| Mann-Whitney: GCG vs random | U = 8.0 | 0.004 | Random significantly higher (Bonferroni-significant) |
+| Mann-Whitney: natural vs obfuscated | U = 50.5 | 0.045 | Natural higher (not Bonferroni-significant) |
+| Spearman correlation (PPL vs score) | rho = -0.002 | 0.992 | No linear correlation |
+
+### Surprises and Insights
+
+1. **Random tokens are &#34;easiest&#34; to explain**: The model&#39;s meta-cognitive ability to recognize pure nonsense is stronger than its ability to parse structured nonsense. This is counterintuitive but makes sense: pure random has no &#34;hooks&#34; for the model to latch onto and confabulate.
+
+2. **GCG suffixes trigger cross-lingual responses**: Tokens like &#34;seterusnya&#34; (Malay), &#34;komentar&#34; (Indonesian), &#34;hier&#34; (Dutch/German) caused GPT-4.1 to respond in those languages. This suggests GCG optimization inadvertently discovers cross-lingual trigger tokens.
+
+3. **Jailbreaks score lower than expected**: Human-crafted jailbreaks (score 3.75) scored similarly to GCG suffixes (3.75), despite being readable English. The model correctly identified jailbreak *intent* but gave incomplete explanations of the social engineering mechanisms.
+
+4. **Obfuscated prompts are surprisingly effective**: Leet-speak (&#34;3xpl41n qu4ntum c0mput1ng&#34;) was perfectly decoded by GPT-4.1, but pig-latin and reversed text received lower explanation scores despite the model successfully executing the tasks.
+
+### Limitations
+
+1. **Sample size**: 8 prompts per category (40 total) limits statistical power. Effect sizes are medium-large but wider confidence intervals would be needed.
+2. **Single model**: Testing only GPT-4.1 limits generalizability. Different models may have different self-explanation capabilities.
+3. **No true GCG generation**: We used published GCG examples rather than generating our own, so we couldn&#39;t test the full &#34;generate -&gt; follow -&gt; explain&#34; cycle on a single model.
+4. **LLM-as-judge limitations**: Using GPT-4.1 to judge its own explanations introduces circularity. A human evaluation would be more rigorous.
+5. **Explanation scoring includes meta-recognition**: Our scoring rubric treats &#34;correctly identifying nonsense&#34; as a valid explanation (score 4-5), which inflates scores for random prompts. An alternative design could separate understanding from meta-recognition.
+6. **Random search vs. gradient optimization**: Our directed nonsense search used random sampling, which is much weaker than GCG. The 5% success rate reflects the inefficiency of random search, not necessarily the difficulty of finding directed nonsense.
+
+## 6. Conclusions
+
+### Summary
+LLMs&#39; ability to explain prompts does not decrease monotonically with perplexity. Instead, we observe a U-shaped pattern: models handle both natural language (via understanding) and pure random (via meta-recognition) well, but struggle with *partially structured nonsense* like GCG adversarial suffixes that have enough structure to trigger confabulated interpretations. This &#34;uncanny valley&#34; of prompt comprehension is precisely where adversarial attacks operate.
+
+### Implications
+- **For AI safety**: The finding that GCG suffixes trigger compliant responses with confabulated justifications (rather than clear refusal) suggests that safety training needs to handle the structured-nonsense region specifically. Current alignment works for natural language and pure random, but fails in between.
+- **For interpretability**: Models have two distinct explanation mechanisms (understanding vs. meta-recognition) that leave a gap exploitable by adversarial prompts. Defenses should target this gap directly.
+- **For the user&#39;s original question**: Models CAN explain random nonsense (by recognizing it as nonsense) but CANNOT genuinely explain GCG-style structured nonsense that directs their behavior. The prompts are not &#34;understood&#34; the way English is—they exploit mechanical pattern-matching that bypasses the model&#39;s self-reflective capabilities.
+
+### Confidence in Findings
+Medium-high confidence in the U-shaped pattern (statistically significant Kruskal-Wallis test, p=0.005). Lower confidence in specific pairwise comparisons due to small sample size. The directed nonsense search confirms the difficulty of finding such prompts via random search but cannot speak to gradient-based methods.
+
+## 7. Next Steps
+
+### Immediate Follow-ups
+1. **Larger sample**: Scale to 50+ prompts per category for tighter confidence intervals
+2. **Multiple models**: Test Claude, Gemini, and open-source models (LLaMA, Mistral) for cross-model comparison
+3. **Human evaluation**: Replace LLM-as-judge with human annotators to eliminate circularity
+4. **Separate scoring**: Create distinct rubrics for &#34;understanding&#34; vs &#34;meta-recognition&#34; explanations
+
+### Alternative Approaches
+1. **Gradient-based directed nonsense**: Use GCG on a local model to find prompts for specific benign tasks (e.g., &#34;write a poem&#34;), then test if the target model can explain them
+2. **Probe hidden states**: Use linear probes on model internals to see if the model &#34;knows&#34; more about GCG prompts than it can articulate
+3. **Iterative explanation**: Ask the model to explain, show it its own response, then ask it to explain again—testing whether self-reflection improves understanding
+
+### Open Questions
+1. Is the U-shape a fundamental property of transformer architectures or an artifact of training?
+2. Can safety training be extended to cover the &#34;structured nonsense&#34; gap?
+3. Do reasoning models (o1, DeepSeek-R1) show the same U-shape, or does chain-of-thought help bridge the gap?
+4. Is there a perplexity threshold above which GCG optimization becomes impossible?
+
+## References
+
+1. Cherepanova &amp; Zou (2024). &#34;Talking Nonsense: Probing LLMs&#39; Understanding of Adversarial Gibberish Inputs.&#34; arXiv:2404.17120.
+2. Zou et al. (2023). &#34;Universal and Transferable Adversarial Attacks on Aligned Language Models.&#34; arXiv:2307.15043.
+3. Alon &amp; Kamfonas (2023). &#34;Detecting Language Model Attacks with Perplexity.&#34; arXiv:2308.14132.
+4. Jain et al. (2023). &#34;Baseline Defenses for Adversarial Attacks Against Aligned Language Models.&#34; arXiv:2309.00614.
+5. Erziev (2025). &#34;A la recherche du sens perdu.&#34; arXiv:2503.00224.
+6. Wei et al. (2023). &#34;Jailbroken: How Does LLM Safety Training Fail?&#34; arXiv:2307.02483.
+7. Zhu et al. (2023). &#34;AutoDAN: Automatic and Interpretable Adversarial Attacks.&#34; arXiv:2310.15140.
+
+
+════════════════════════════════════════════════════════════════════════════════
+                            RESEARCH PLAN
+════════════════════════════════════════════════════════════════════════════════
+
+# Research Plan: Do LLMs Understand Nonsense Commands?
+
+## Motivation &amp; Novelty Assessment
+
+### Why This Research Matters
+LLMs can be manipulated by adversarial prompts that appear as gibberish to humans (GCG suffixes, Babel prompts). Understanding whether models can *explain* these prompts—not just respond to them—reveals whether adversarial attacks exploit genuine linguistic understanding or merely trigger mechanical pattern responses. This has direct implications for AI safety: if models can&#39;t explain what nonsense prompts &#34;mean,&#34; it suggests alignment mechanisms are superficial and can be bypassed by inputs the model processes but doesn&#39;t &#34;understand.&#34;
+
+### Gap in Existing Work
+The literature extensively studies whether LLMs *respond* to nonsense (Cherepanova &amp; Zou 2024, Zou et al. 2023) and whether nonsense can be *detected* (Alon &amp; Kamfonas 2023). However, no study systematically tests whether models can *explain* or *interpret* the nonsense prompts they successfully follow. The &#34;Talking Nonsense&#34; paper shows Babel prompts have hidden structure, but doesn&#39;t ask models to articulate that structure.
+
+### Our Novel Contribution
+1. **Self-explanation test**: Systematically measure whether LLMs can explain prompts across a perplexity spectrum
+2. **Directed nonsense search**: Test whether high-perplexity prompts can direct benign tasks or only jailbreaking
+3. **Explanation quality × perplexity correlation**: Quantify the comprehension threshold
+
+### Experiment Justification
+- **Experiment 1 (Explanation Quality Spectrum)**: Tests the core hypothesis across 5 prompt categories
+- **Experiment 2 (Directed Nonsense Search)**: Tests whether prompt optimization generalizes beyond jailbreaking
+- **Experiment 3 (Cross-Model Explanation)**: Tests whether nonsense encodes transferable meaning
+
+## Research Question
+Can LLMs explain or interpret high-perplexity prompts that successfully direct their behavior?
+
+## Hypothesis Decomposition
+- **H1**: Explanation quality decreases with prompt perplexity
+- **H2**: Models that follow nonsense prompts cannot explain what they &#34;mean&#34;
+- **H3**: Finding directed nonsense for benign tasks is harder than for jailbreaking
+
+## Proposed Methodology
+
+### Prompt Categories (5 levels)
+1. **Natural instructions**: Clear English task descriptions
+2. **Obfuscated instructions**: Leet-speak, word scrambles, pig-latin
+3. **Human-crafted jailbreaks**: From datasets (medium perplexity, readable)
+4. **GCG-style adversarial suffixes**: Published examples (high perplexity)
+5. **Random token strings**: Control baseline (very high perplexity)
+
+### Experiments
+1. Measure GPT-2 perplexity for all prompts
+2. Send each to GPT-4.1 and assess task completion
+3. Ask GPT-4.1 to explain each prompt&#39;s meaning
+4. Score explanation quality via LLM-as-judge (1-5 scale)
+5. Search for high-perplexity prompts for benign vs. jailbreak tasks
+6. Statistical analysis of perplexity-explanation correlation
+
+### Evaluation Metrics
+- GPT-2 perplexity, task success rate, explanation quality (1-5), Spearman ρ
+
+### Statistical Plan
+- Spearman correlation, Kruskal-Wallis test, Mann-Whitney U pairwise
+- Bootstrap CIs, α = 0.05 with Bonferroni correction
+
+
+════════════════════════════════════════════════════════════════════════════════
+                          LITERATURE REVIEW
+════════════════════════════════════════════════════════════════════════════════
+
+# Literature Review: Do LLMs Understand Nonsense Commands?
+
+## Research Area Overview
+
+This review covers research on whether large language models (LLMs) can interpret, explain, or respond meaningfully to prompts that appear as nonsensical gibberish to humans. The field sits at the intersection of adversarial ML, LLM safety/alignment, and interpretability. The central question—whether LLMs &#34;understand&#34; their own non-human language—has implications for jailbreak attacks, alignment robustness, and the fundamental nature of language model computation.
+
+## Key Papers
+
+### 1. Talking Nonsense: Probing LLMs&#39; Understanding of Adversarial Gibberish Inputs
+- **Authors**: Cherepanova &amp; Zou (Amazon AWS AI, Stanford)
+- **Year**: 2024 (arXiv:2404.17120)
+- **Key Contribution**: Systematic study of &#34;LM Babel&#34;—gibberish prompts crafted via GCG that compel LLMs to produce specific coherent outputs.
+- **Methodology**: Uses GCG optimizer to craft 20-token gibberish prompts targeting specific outputs across Wikipedia, CC-News, AESLC, and AdvBench datasets. Tests on LLaMA2-Chat and Vicuna (7B, 13B).
+- **Key Results**:
+  - Success rates: Vicuna-7B 35-81%, LLaMA2-7B 20-55% across datasets
+  - **Harmful text (AdvBench) is EASIER to elicit than benign text** (81% vs 35-66% for Vicuna-7B), suggesting alignment fails for OOD prompts
+  - Success depends on target length (91% for &lt;10 tokens, &lt;20% for &gt;22 tokens) and target perplexity
+  - Babel prompts have perplexity as high as random tokens (~11.7) but lower conditional entropy (13.08 vs 13.35), indicating hidden structure
+  - Babel prompts cluster separately from random prompts in representation space (UMAP visualization)
+  - For LLaMA models, Babel prompts achieve **lower conditional perplexity** (better loss minima) than natural &#34;Repeat this:&#34; prompts
+  - Extremely fragile: removing 1 token breaks &gt;70% of prompts; removing punctuation breaks 97%
+  - Can extract &#34;unlearned&#34; content (Harry Potter) at 36% success rate even after fine-tuning to forget
+  - Babel prompts contain non-trivial trigger tokens (e.g., &#34;wiki&#34; for Wikipedia targets, &#34;news&#34; for CC-News)
+- **Relevance**: **Most directly relevant paper**. Demonstrates that LLMs respond to gibberish they cannot explain, and that this gibberish has hidden structure despite appearing random.
+
+### 2. Detecting Language Model Attacks with Perplexity
+- **Authors**: Alon &amp; Kamfonas (U Michigan)
+- **Year**: 2023 (arXiv:2308.14132)
+- **Key Contribution**: Proposes using GPT-2 perplexity as a detector for GCG-style adversarial suffix attacks.
+- **Methodology**: Measures GPT-2 perplexity of adversarial suffixes vs. regular prompts. Trains LightGBM classifier on perplexity + token length.
+- **Key Results**:
+  - GCG adversarial suffixes have exceedingly high perplexity values (measured by GPT-2)
+  - Simple perplexity threshold has high false positive rate for diverse prompt types
+  - LightGBM on (perplexity, token_length) features resolves false positives
+  - **Does NOT detect human-crafted jailbreaks** (which have normal perplexity)
+  - Uses F_beta score with beta=2 (favoring recall over precision)
+- **Relevance**: Establishes perplexity as a key distinguishing feature of machine-generated nonsense prompts. Validates that adversarial suffixes are statistically distinguishable from natural language.
+
+### 3. A la recherche du sens perdu: Your Favourite LLM Might Have More to Say Than You Can Understand
+- **Authors**: Erziev
+- **Year**: 2025 (arXiv:2503.00224)
+- **Key Contribution**: Discovers LLMs can understand English instructions encoded in visually incomprehensible Unicode sequences (e.g., Byzantine Musical Symbols encoding &#34;say abracadabra&#34;).
+- **Methodology**: Systematically tests 4342 UTF-8 encoding schemes across 14 LLMs. Measures &#34;understanding rate&#34; via Levenshtein distance to expected outputs. Tests jailbreak attacks using understood encodings.
+- **Key Results**:
+  - Claude family models (especially Claude-3.7 Sonnet) achieve highest understanding rates (~30%)
+  - Different models understand different encodings, even within the same family
+  - Hypothesized mechanism: BPE tokenization creates spurious correlations that map Unicode sequences to ASCII equivalents
+  - Attack success rates: gpt-4o mini ASR=0.4, gpt-4o ASR=0.1, Claude-3.5 Sonnet ASR=0.09
+  - **LLMs are surprisingly resilient** to pure encoding-based attacks (need additional template tricks)
+  - Reasoning models (DeepSeek-R1) explicitly identify substitution ciphers in chain-of-thought
+  - Raises concerns about LLM-as-judge approaches: models can communicate in languages judges don&#39;t understand
+- **Relevance**: Shows LLMs have a form of &#34;understanding&#34; of nonsense that goes beyond GCG—they can decode systematic encodings, suggesting deeper pattern recognition abilities. Contrasts with GCG nonsense which has no systematic encoding.
+
+### 4. ASETF: Jailbreak Attack on LLMs through Translate Suffix Embeddings (From Noise to Clarity)
+- **Authors**: Wang, Li, Huang &amp; Sha (Beihang University, Tsinghua)
+- **Year**: 2024 (arXiv:2402.16006)
+- **Key Contribution**: Translates continuous adversarial suffix embeddings into coherent, readable text using an embedding translation model.
+- **Methodology**: Optimizes adversarial suffixes in continuous embedding space, then trains a translation model (fine-tuned GPT-j) to convert embeddings back to fluent text using Wikipedia parallel corpus.
+- **Key Results**:
+  - Significantly reduces computational cost vs. discrete GCG optimization
+  - Produces **fluent adversarial suffixes** that evade perplexity-based defenses
+  - Transferable to black-box models (ChatGPT, Gemini)
+- **Relevance**: Demonstrates that the &#34;meaning&#34; encoded in adversarial embeddings can be translated back to human-readable form, suggesting adversarial suffixes do encode interpretable information at the embedding level.
+
+### 5. Deciphering the Chaos: Enhancing Jailbreak Attacks via Adversarial Prompt Translation
+- **Authors**: (arXiv:2410.11317)
+- **Year**: 2024
+- **Key Contribution**: Uses LLMs to translate/interpret adversarial prompts into natural language, then uses translated versions for attacks.
+- **Relevance**: Directly tests whether adversarial prompts can be &#34;explained&#34; by models—central to our hypothesis.
+
+### 6. Universal and Transferable Adversarial Attacks on Aligned Language Models (GCG)
+- **Authors**: Zou et al. (CMU, Center for AI Safety, Bosch)
+- **Year**: 2023 (arXiv:2307.15043, 2642 citations)
+- **Key Contribution**: Introduces the Greedy Coordinate Gradient (GCG) attack—the foundational method for generating adversarial suffixes.
+- **Methodology**: Gradient-based discrete optimization over token space to find adversarial suffixes that bypass safety alignment.
+- **Key Results**: Suffixes transfer across models (open-source to commercial). Requires ~513,000 model evaluations.
+- **Relevance**: The core attack method studied by most other papers. Produces the &#34;nonsense commands&#34; central to our research.
+
+### 7. Refusal in Language Models Is Mediated by a Single Direction
+- **Authors**: (arXiv:2406.11717, 519 citations)
+- **Year**: 2024
+- **Key Contribution**: Identifies that LLM refusal behavior is controlled by a single direction in activation space.
+- **Relevance**: Explains WHY adversarial suffixes work mechanistically—they may suppress the refusal direction. Suggests alignment is shallow.
+
+### 8. Jailbroken: How Does LLM Safety Training Fail?
+- **Authors**: Wei et al.
+- **Year**: 2023 (arXiv:2307.02483, 1597 citations)
+- **Key Contribution**: Taxonomizes jailbreak failure modes: competing objectives and mismatched generalization.
+- **Relevance**: Provides theoretical framework for understanding why models fail on OOD (nonsense) inputs.
+
+### 9. Baseline Defenses for Adversarial Attacks Against Aligned Language Models
+- **Authors**: Jain et al.
+- **Year**: 2023 (arXiv:2309.00614, 629 citations)
+- **Key Contribution**: Evaluates defenses including perplexity filtering, paraphrasing, and retokenization.
+- **Key Results**: Windowed perplexity filter blocks 80% of white-box adaptive attacks. ~7% false positive rate on AlpacaEval.
+- **Relevance**: Establishes baseline defense methods and their limitations against nonsense prompts.
+
+### 10. SmoothLLM: Defending LLMs Against Jailbreaking Attacks
+- **Authors**: (arXiv:2310.03684, 426 citations)
+- **Year**: 2023
+- **Key Contribution**: Randomized smoothing defense—perturbs input characters and aggregates predictions.
+- **Relevance**: Exploits the fragility of adversarial suffixes (consistent with Cherepanova&#39;s finding that single token removal breaks 70%+ of attacks).
+
+### 11. AutoDAN: Automatic and Interpretable Adversarial Attacks
+- **Authors**: Zhu et al.
+- **Year**: 2023 (arXiv:2310.15140, 108 citations)
+- **Key Contribution**: Generates interpretable/readable adversarial prompts using hierarchical genetic algorithm.
+- **Relevance**: Bridges gap between nonsensical GCG suffixes and human-readable jailbreaks, testing whether readability correlates with effectiveness.
+
+### 12. Universal Jailbreak Suffixes Are Strong Attention Hijackers
+- **Authors**: (arXiv:2506.12880)
+- **Year**: 2025
+- **Key Contribution**: Mechanistic analysis showing adversarial suffixes work by hijacking attention patterns.
+- **Relevance**: Provides mechanistic explanation for HOW nonsense prompts manipulate model behavior.
+
+### 13. Between the Bars: Gradient-based Jailbreaks are Bugs that Induce Features
+- **Authors**: (OpenReview)
+- **Key Contribution**: Argues GCG suffixes exploit &#34;bugs&#34; (spurious correlations) rather than genuine features.
+- **Relevance**: Directly relevant to whether LLMs &#34;understand&#34; or merely &#34;react to&#34; nonsense inputs.
+
+### 14. Toward Understanding the Transferability of Adversarial Suffixes in LLMs
+- **Authors**: (arXiv:2510.22014)
+- **Year**: 2025
+- **Key Contribution**: Studies why adversarial suffixes transfer across models.
+- **Relevance**: If suffixes transfer, models may share common &#34;nonsense understanding&#34; mechanisms.
+
+### 15. Adversarial Manipulation of Reasoning Models using Internal Representations
+- **Authors**: (arXiv:2507.03167)
+- **Year**: 2025
+- **Key Contribution**: Studies adversarial attacks on reasoning models using internal representation manipulation.
+- **Relevance**: Extends adversarial nonsense research to newer reasoning-capable models.
+
+## Common Methodologies
+
+1. **GCG-based suffix optimization**: Used by most papers (Zou et al., Cherepanova, Alon). Discrete gradient-based search over token space. Standard setup: 20 tokens, 1000 iterations, 256 candidates per step.
+2. **Perplexity measurement**: GPT-2 perplexity as a proxy for &#34;nonsensicalness&#34; (Alon, Jain, Cherepanova). Standard formula: PPL(x) = exp(-1/t * sum(log p(xi|x&lt;i))).
+3. **Embedding space analysis**: UMAP visualization, attention analysis, hidden state probing (Cherepanova, attention hijacking paper).
+4. **Attack success rate (ASR)**: Standard metric across all jailbreak papers. Measured via string matching or LLM-as-judge.
+5. **Encoding/translation approaches**: UTF-8 encoding (Erziev), embedding translation (ASETF), prompt translation (Deciphering the Chaos).
+
+## Standard Baselines
+- **GCG attack** (Zou et al. 2023): The standard adversarial suffix generator
+- **AdvBench**: Standard harmful behavior benchmark (520 behaviors)
+- **JailbreakBench**: Curated 100 harmful + 100 benign behaviors
+- **Perplexity filtering** (Alon &amp; Kamfonas): Standard detection baseline
+- **SmoothLLM**: Standard defense baseline
+
+## Evaluation Metrics
+- **Exact Match Rate**: Whether model outputs target text exactly
+- **Attack Success Rate (ASR)**: Whether jailbreak elicits harmful response
+- **Perplexity**: Log-likelihood based measure of text naturalness
+- **Conditional Perplexity**: Perplexity of target text conditioned on prompt
+- **F_beta score**: For detection (beta=2 favors recall)
+
+## Datasets in the Literature
+- **AdvBench** (Zou et al.): 520 harmful behaviors + 574 harmful strings. Used in most papers.
+- **JailbreakBench (JBB-Behaviors)**: 100 harmful + 100 benign, 10 categories. Used by Erziev.
+- **HarmBench**: 400 behaviors with semantic/functional categorization.
+- **Wikipedia, CC-News, AESLC**: Benign text datasets used by Cherepanova.
+- **AlpacaEval**: Used for false positive rate evaluation (Jain et al.).
+
+## Gaps and Opportunities
+
+1. **Can LLMs explain adversarial suffixes?** While papers study whether LLMs *respond* to nonsense, few directly test whether models can *explain* or *interpret* what the nonsense means. This is our central research question.
+2. **Perplexity spectrum**: Most work treats prompts as binary (adversarial/natural). A continuous analysis of how model comprehension varies across the perplexity spectrum is missing.
+3. **Cross-model understanding**: Erziev shows different models understand different encodings. Systematic comparison of which models can interpret which types of nonsense is underexplored.
+4. **Self-interpretation ability**: Can a model that successfully responds to a Babel prompt also explain what it &#34;understood&#34;? This reflexive capability hasn&#39;t been tested.
+5. **Distinction between reaction and understanding**: &#34;Between the Bars&#34; raises the question of whether models truly &#34;understand&#34; or merely exploit bugs. Experiments testing model self-explanation could distinguish these.
+
+## Recommendations for Our Experiment
+
+Based on the literature review:
+
+- **Recommended datasets**: AdvBench (harmful behaviors), JailbreakBench (both harmful + benign controls), plus human-crafted jailbreaks (from jailbreak_llms dataset) as a readable control group
+- **Recommended approach**:
+  1. Generate or collect GCG adversarial suffixes (high perplexity, nonsensical)
+  2. Collect human-crafted jailbreaks (low perplexity, readable)
+  3. Ask LLMs to &#34;explain&#34; or &#34;interpret&#34; both types of prompts
+  4. Measure whether explanation quality correlates with perplexity
+  5. Test whether models that successfully respond to Babel prompts can also explain them
+- **Recommended metrics**: Perplexity (GPT-2), explanation quality (LLM-as-judge), ASR, exact match rate
+- **Recommended models**: Open-source models (LLaMA, Vicuna) for white-box analysis + API models (GPT-4, Claude) for black-box testing
+- **Key experimental contrast**: Compare model ability to explain human-readable jailbreaks vs. GCG gibberish, testing the hypothesis that high-perplexity prompts cannot be interpreted even by the models they successfully manipulate
+
+
+════════════════════════════════════════════════════════════════════════════════
+                          PAPER REQUIREMENTS
+════════════════════════════════════════════════════════════════════════════════
+
+Generate a complete academic paper with the following structure:
+
+1. TITLE
+   - Clear, specific, informative
+   - Should convey main finding or contribution
+
+2. AUTHOR
+   - Use this exact author line in the \author{} block: Ari Holtzman and NeuriCo
+
+3. ABSTRACT (150-250 words)
+   - Problem statement
+   - Approach
+   - Key results
+   - Significance
+
+4. INTRODUCTION
+   - Research problem and motivation
+   - Gap in existing work
+   - Our contribution (be specific)
+   - Paper organization
+
+5. RELATED WORK
+   - Organized by theme/approach
+   - Position our work relative to prior work
+   - Cite papers from literature review
+
+6. METHODOLOGY
+   - Clear description of approach
+   - Experimental setup
+   - Datasets used
+   - Evaluation metrics
+   - Baselines
+
+7. RESULTS
+   - Present results with tables and figures
+   - Statistical analysis
+   - Comparison to baselines
+   - Ablation studies (if applicable)
+
+8. DISCUSSION
+   - Interpretation of results
+   - Limitations
+   - Broader implications
+
+9. CONCLUSION
+   - Summary of contributions
+   - Key findings
+   - Future work
+
+10. REFERENCES
+   - BibTeX format
+   - All cited papers
+
+════════════════════════════════════════════════════════════════════════════════
+                          OUTPUT FORMAT
+════════════════════════════════════════════════════════════════════════════════
+
+Create a MODULAR LaTeX project with the following directory structure:
+
+paper_draft/
+├── main.tex              # Main file that imports all sections
+├── references.bib        # BibTeX references
+├── sections/
+│   ├── abstract.tex      # Abstract content
+│   ├── introduction.tex  # Introduction section
+│   ├── related_work.tex  # Related work section
+│   ├── methodology.tex   # Methodology section
+│   ├── results.tex       # Results section
+│   ├── discussion.tex    # Discussion section
+│   └── conclusion.tex    # Conclusion section
+├── figures/              # Directory for any generated figures
+├── tables/               # Directory for complex standalone tables
+└── appendix/             # Directory for appendix sections (if needed)
+
+INSTRUCTIONS:
+1. First, create the directory structure above (mkdir -p paper_draft/sections paper_draft/figures paper_draft/tables paper_draft/appendix)
+2. Write main.tex using the EXACT preamble for NEURIPS:
+
+   \documentclass{article}
+   \usepackage[final]{neurips_2025}  % NEURIPS style (neurips_2025.sty is in paper_draft/)
+   \usepackage[hidelinks]{hyperref}  % REQUIRED: clickable links
+   \usepackage{booktabs}  % REQUIRED: professional tables
+   \usepackage{graphicx}
+   \usepackage{amsmath,amssymb}
+
+   % Import command files
+   \input{commands/math}
+   \input{commands/general}
+   \input{commands/macros}
+
+   % Use this bibliography style:
+   \bibliographystyle{plainnat}
+
+   \author{Ari Holtzman and NeuriCo}
+
+   - Use \input{sections/...} to include each section
+   - Use \bibliography{references} for references
+3. Write each section file with COMPLETE content (no placeholders)
+4. Each section file should include its \section{} command
+5. Write references.bib with all citations in BibTeX format
+6. After writing all files, compile the paper:
+   cd paper_draft && pdflatex -interaction=nonstopmode main.tex && bibtex main && pdflatex -interaction=nonstopmode main.tex && pdflatex -interaction=nonstopmode main.tex
+
+This modular structure allows humans to easily:
+- Edit individual sections without navigating a large file
+- Track changes per section
+- Reuse sections across different paper versions
+
+════════════════════════════════════════════════════════════════════════════════
+                          QUALITY REQUIREMENTS
+════════════════════════════════════════════════════════════════════════════════
+
+- Academic tone throughout
+- All claims must be supported by data from the experiment report
+- Proper citations using \cite{} commands
+- Clear figures and tables with proper captions
+- NO placeholder text - every section must have real content
+- The paper MUST compile without errors
+- If compilation fails, debug and fix the LaTeX errors
+
+════════════════════════════════════════════════════════════════════════════════
+                          LAB WRITING STYLE
+════════════════════════════════════════════════════════════════════════════════
+
+Follow these lab-specific conventions to match our paper style:
+
+1. LANGUAGE STYLE:
+   - Use active voice: "We propose", "We examine", "We focus on"
+   - Be direct and confident: "Our main question is...", "We hypothesize that..."
+   - State things clearly and simply - prefer plain language over jargon
+   - Use bold questions as paragraph organizers: {\bf what is X?}
+   - Include specific quantitative claims: "8.97% over baseline"
+   - Avoid fancy wording: "utilize" → "use", "facilitate" → "help"
+
+2. INTRODUCTION STRUCTURE:
+   - Engaging hook (get to the point quickly)
+   - Problem importance
+   - Gap identification
+   - Your approach with method figure reference
+   - Quantitative preview of results
+   - Contribution bullets (3-4 items, action verbs)
+
+3. CONTRIBUTION LISTS:
+   \begin{itemize}[leftmargin=*,itemsep=0pt,topsep=0pt]
+       \item We propose...
+       \item We conduct...
+       \item We complement...
+   \end{itemize}
+
+4. MODULAR COMMANDS STRUCTURE:
+   Command templates are pre-copied to paper_draft/commands/:
+   - math.tex: Math notation macros
+   - general.tex: Formatting macros
+   - macros.tex: Project-specific term definitions (customize this for your paper)
+
+   In main.tex, include:
+   \input{commands/math}
+   \input{commands/general}
+   \input{commands/macros}
+
+5. REFERENCE CONVENTIONS:
+   Use reference macros from math.tex:
+   - \figref{fig:name} for "figure 1" (lowercase, in-sentence)
+   - \Figref{fig:name} for "Figure 1" (capitalized, start of sentence)
+   - \secref{sec:name} for "section 2"
+
+6. TEXT FORMATTING:
+   - Use \para{Header text} for bold paragraph headers
+   - Define method/dataset names with \textsc and \xspace:
+     \newcommand{\methodname}{\textsc{MethodName}\xspace}
+
+7. TABLE FORMATTING:
+   - Use booktabs package (no vertical lines)
+   - Use \resizebox{\textwidth}{!}{...} for wide tables
+   - Use @{} to remove padding at table edges
+   - Use \cmidrule(lr){x-y} for sub-headers
+   - Use \textsc{} for dataset/method names in headers
+   - Bold best results with {\bf ...}
+
+8. FIGURE FORMATTING:
+   - Use 0.32\textwidth for 3-column subfigures
+   - Use 0.95\linewidth for full-width figures
+   - Use \input{figures/legend} for shared legends
+   - Write self-contained captions explaining key observations
+
+9. RESULTS PRESENTATION:
+   - Define \increase and \decrease for colored arrows (green up, red down)
+   - Bold best results in tables
+   - Report confidence intervals when available
+
+10. ALGORITHM STYLING:
+    - Use algpseudocode with [noend]
+    - Use \triangleright for comments
+
+11. HYPERLINKS (REQUIRED):
+    - Always use \usepackage[hidelinks]{hyperref} or with colored links
+    - All citations, section refs, figure refs, table refs must be clickable
+    - This is essential for reader navigation
+
+════════════════════════════════════════════════════════════════════════════════
+                          WORKFLOW: REVIEW AND REFLECT
+════════════════════════════════════════════════════════════════════════════════
+
+Before calling finish, you MUST complete these review steps:
+
+1. REVIEW RESOURCES (at the start):
+   - Read .claude/skills/paper-writer/SKILL.md for detailed guidance
+   - Study templates/paper_writing/lab_style_guide.md for style conventions
+   - Browse paper_examples/ for formatting and language patterns
+
+2. SELF-REFLECTION (before finishing):
+   After writing all sections, review your work against these criteria:
+
+   LANGUAGE CHECK:
+   - [ ] Is the writing clear and jargon-free?
+   - [ ] Are claims specific with quantitative support?
+   - [ ] Is active voice used throughout?
+
+   FORMATTING CHECK:
+   - [ ] Does main.tex include \input{commands/math}, \input{commands/general}, \input{commands/macros}?
+   - [ ] Is hyperref package included for clickable references?
+   - [ ] Do tables use booktabs (no vertical lines)?
+   - [ ] Are best results bolded in tables?
+   - [ ] Are figures/tables properly captioned?
+
+   STRUCTURE CHECK:
+   - [ ] Does introduction follow: hook → importance → gap → approach → preview → contributions?
+   - [ ] Are contribution bullets specific with action verbs?
+   - [ ] Does the paper compile without errors?
+
+3. FIX ISSUES:
+   - Address any issues found in the self-reflection
+   - Re-compile and verify the PDF looks correct
+
+Only after completing this review should you consider the paper finished.

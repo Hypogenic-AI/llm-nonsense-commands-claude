@@ -1,0 +1,63 @@
+\section{Methodology}
+\label{sec:method}
+
+\subsection{Dataset Construction}
+\label{sec:dataset}
+
+We construct a dataset of 40~prompts spanning five categories along the perplexity spectrum (\tabref{tab:dataset}). Each category contains 8~prompts:
+
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=0pt]
+    \item \textbf{Natural language}: Hand-crafted clear English instructions (\eg ``Write a haiku about a cat sleeping in the sun'').
+    \item \textbf{Obfuscated}: Instructions encoded via leet-speak, pig-latin, reversed words, telegraphic style, and key-value format (\eg ``etirW a trohs meop tuoba eht naeco gnisu ylno pu-edam sdrow'').
+    \item \textbf{Human jailbreaks}: Prompts drawn from the ChatGPT jailbreak dataset \citep{shen2023anything}, which use social engineering rather than token-level manipulation.
+    \item \textbf{\gcg suffixes}: Published adversarial suffix examples from \citet{zou2023universal}, with perplexity values ranging from 477 to 158,892.
+    \item \textbf{Random tokens}: Randomly generated ASCII character strings, serving as a high-perplexity control (\eg \texttt{CiePj\#DI"9A\&q\_\_7E7Zymm}).
+\end{itemize}
+
+\begin{table}[t]
+    \centering
+    \caption{Dataset summary. We report \gpttwo perplexity statistics for each category. \gcg suffixes exhibit the widest range, spanning nearly three orders of magnitude.}
+    \begin{tabular}{@{}lcrrr@{}}
+        \toprule
+        \textbf{Category} & \textbf{$N$} & \textbf{Median \ppl} & \textbf{IQR (low)} & \textbf{IQR (high)} \\
+        \midrule
+        Natural language   & 8 &      56.7 &     44.1 &      98.1 \\
+        Obfuscated         & 8 &     334.6 &    129.3 &   1,220.5 \\
+        Human jailbreaks   & 8 &      79.0 &     61.7 &     107.5 \\
+        \gcg suffixes      & 8 &   3,493.5 &    919.2 &   4,601.6 \\
+        Random tokens      & 8 &     392.5 &    321.2 &     546.2 \\
+        \bottomrule
+    \end{tabular}
+    \label{tab:dataset}
+\end{table}
+
+\subsection{Perplexity Measurement}
+
+We compute perplexity for all prompts using \gpttwo (117M parameters) via HuggingFace Transformers on an NVIDIA RTX A6000 GPU. We choose \gpttwo because it is the standard perplexity reference model in the adversarial NLP literature \citep{alon2023detecting, jain2023baseline}.
+
+\subsection{Three-Stage Evaluation Protocol}
+\label{sec:protocol}
+
+For each of the 40~prompts, we conduct three sequential API calls to \gptfour:
+
+\para{Stage 1: Task execution.} We send the prompt directly to \gptfour and record its response. This determines whether the model \emph{follows} the prompt (\ie attempts to produce task-relevant output) or \emph{rejects} it (\ie flags it as nonsensical or harmful).
+
+\para{Stage 2: Self-explanation.} We ask \gptfour to explain the prompt's meaning and intent. The instruction is: ``Explain what the following prompt means, what it is asking the model to do, and what the likely intent behind it is.'' This tests whether the model can articulate the purpose of prompts it may have already followed.
+
+\para{Stage 3: Quality judgment.} We use \gptfour as a judge to score the explanation from Stage~2 on a 1--5 scale against the ground-truth intent of each prompt. The scoring rubric awards 5~points for a complete and accurate explanation, 3~points for a partially correct explanation, and 1~point for a wholly incorrect or vacuous explanation. Correctly identifying a prompt as meaningless (\eg ``this is a random string'') counts as a valid explanation for prompts that \emph{are} genuinely random.
+
+All API calls use temperature~0 for deterministic reproducibility, with maximum token limits of 300 (execution), 400 (explanation), and 200 (judgment).
+
+\subsection{Directed Nonsense Search}
+\label{sec:directed}
+
+To test whether high-perplexity prompts can accidentally direct specific model behavior, we conduct a random search experiment. We generate 60~random token sequences and send them to \gptfour, checking whether the output is relevant to a target task: 30~trials target a benign task (writing a poem) and 30~target a jailbreak-adjacent task. We evaluate relevance using keyword matching and manual inspection.
+
+\subsection{Statistical Analysis}
+
+We use nonparametric tests throughout, as explanation scores are ordinal:
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=0pt]
+    \item \textbf{Kruskal-Wallis test}: Overall differences across all five categories.
+    \item \textbf{Mann-Whitney $U$ tests}: Pairwise comparisons with Bonferroni correction ($\alpha = 0.05 / 10 = 0.005$).
+    \item \textbf{Spearman correlation}: Relationship between perplexity and explanation score.
+\end{itemize}

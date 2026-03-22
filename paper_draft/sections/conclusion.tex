@@ -1,0 +1,6 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+We presented the first systematic evaluation of LLM self-explanation ability across a perplexity spectrum. Our central finding is a U-shaped explanation quality pattern: models explain both natural language (via understanding) and pure random tokens (via \metarecog) well, but struggle with partially structured nonsense---the exact regime where adversarial attacks operate. This \uncannyvalley of prompt comprehension reveals that the hardest prompts for LLMs to interpret are not the most nonsensical, but those with just enough structure to trigger confabulated interpretations.
+
+Our results suggest that safety training needs to explicitly address the structured-nonsense gap between understanding and \metarecog. Current alignment works well at both endpoints of the perplexity spectrum but fails in the middle, where models confabulate compliance rather than refusing or correctly interpreting the prompt. We hope this work motivates targeted defenses for the \uncannyvalley and further investigation into whether reasoning models, chain-of-thought prompting, or multi-model verification can bridge this comprehension gap.

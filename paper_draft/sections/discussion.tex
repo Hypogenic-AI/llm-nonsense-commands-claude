@@ -1,0 +1,40 @@
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Two Mechanisms of Explanation}
+
+Our results reveal that LLMs possess two distinct mechanisms for explaining prompts. The first is genuine \textbf{understanding}: parsing semantic content, identifying intent, and describing what a prompt asks. This mechanism works well for natural language (score~4.5/5) and degrades as prompts become less linguistically coherent.
+
+The second is \textbf{\metarecog}: identifying that a prompt is nonsensical and explicitly labeling it as such. This mechanism works perfectly for pure random tokens (score~5.0/5), where the model confidently outputs responses like ``This appears to be a random string of characters with no meaningful content.''
+
+The \uncannyvalley between these mechanisms---where prompts are too structured for clean \metarecog but too incoherent for genuine understanding---is precisely the regime that adversarial attacks exploit. \gcg suffixes, obfuscated text, and human jailbreaks all fall in this gap. The model cannot cleanly reject these prompts as noise, because fragments of recognizable tokens (\eg ``seterusnya,'' ``tikzpicture,'' ``tutorial'') activate language-specific processing pathways. Yet the model cannot genuinely parse the overall meaning, so it \emph{confabulates} a coherent interpretation from partial cues.
+
+\subsection{Why Jailbreaks Score as Low as GCG}
+
+A surprising finding is that human-crafted jailbreaks (score~3.75) score comparably to \gcg suffixes (score~3.75) on explanation quality, despite being fully readable English. The model correctly identifies jailbreak \emph{intent} in most cases but gives incomplete explanations of the social engineering mechanisms at play---for example, recognizing that a ``DAN'' prompt asks the model to ignore guidelines without fully articulating \emph{how} the role-playing framing circumvents safety training. This suggests that models have limited insight into the adversarial mechanisms that affect them, regardless of whether those mechanisms operate at the token level (\gcg) or the semantic level (jailbreaks).
+
+\subsection{Cross-Lingual Trigger Tokens}
+
+The finding that \gcg suffixes trigger responses in Malay, Spanish, and Dutch is consistent with \citet{cherepanova2024talking}'s observation that Babel prompts contain non-trivial trigger tokens. We hypothesize that \gcg optimization over multilingual models inadvertently discovers tokens from low-resource languages that activate strong language-specific priors while being distant enough from English safety training to bypass alignment. This complements \citet{erziev2025sens}'s finding that LLMs can decode instructions in obscure Unicode encodings---both phenomena suggest that the model's multilingual capacity creates attack surface that monolingual safety training does not cover.
+
+\subsection{Implications for AI Safety}
+
+Our findings have three implications for alignment and safety:
+
+\para{1. Safety training has a structured-nonsense blind spot.} Current alignment handles natural language inputs (via instruction following) and pure noise (via rejection). But it fails for the intermediate region of partially structured prompts where models confabulate compliance. Defenses should specifically target this gap.
+
+\para{2. Perplexity is necessary but not sufficient for detection.} Our results confirm that perplexity separates \gcg suffixes from natural text \citep{alon2023detecting}, but perplexity alone cannot predict explanation quality ($\rho = -0.002$). The category of a prompt matters more than its raw perplexity.
+
+\para{3. Self-explanation is not a reliable safety mechanism.} Models that follow adversarial prompts produce plausible-sounding but incomplete explanations. Using LLM self-explanation as a safety check would miss the very attacks it is meant to catch, because the model confabulates coherent justifications for its compliance.
+
+\subsection{Limitations}
+
+\para{Sample size.} Our dataset contains only 8~prompts per category (40~total). While we observe statistically significant effects (Kruskal-Wallis $p = 0.005$), larger samples would yield tighter confidence intervals and more robust pairwise comparisons.
+
+\para{Single model.} We evaluate only \gptfour. Different architectures and training procedures may produce different self-explanation patterns. Open-source models would additionally allow white-box analysis of internal representations.
+
+\para{LLM-as-judge circularity.} Using \gptfour to judge its own explanations introduces potential circularity. The model may rate its own confabulations more favorably than a human judge would. Human evaluation would provide a more rigorous assessment.
+
+\para{Scoring rubric.} Our rubric treats correctly identifying nonsense as a valid explanation (score~4--5). An alternative design that separates understanding from \metarecog would assign different scores to ``I understand this prompt'' and ``this prompt is meaningless,'' yielding a different (likely monotonically decreasing) quality curve. The U-shape is a feature of our inclusive scoring, not an artifact, but alternative rubrics would reveal complementary information.
+
+\para{Random vs.\ gradient-based search.} Our directed nonsense experiment uses random search, which is far weaker than \gcg optimization. The 5\% success rate reflects the inefficiency of random sampling, and our experiment cannot speak to the difficulty of gradient-based directed nonsense generation.

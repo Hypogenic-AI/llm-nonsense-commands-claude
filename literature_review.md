@@ -2,299 +2,182 @@
 
 ## Research Area Overview
 
-This literature review examines the intersection of adversarial prompting, jailbreaking, and LLM understanding of nonsense/gibberish inputs. The research hypothesis under investigation is that LLMs may not be able to explain or interpret prompts that are optimized to produce high-perplexity outputs or outputs that do not resemble English, suggesting that directed prompt-based "jailbreaking" is fundamentally different from standard prompt understanding.
-
-The field has seen rapid development in both attack methods (GCG, AutoDAN, PAIR, COLD-Attack) and defense mechanisms (perplexity filtering, adversarial training). A key finding across this literature is that LLMs can be manipulated by seemingly nonsensical prompts to generate coherent—and often harmful—outputs, yet the models cannot explain or interpret these prompts when asked directly.
-
----
+This review covers research on whether large language models (LLMs) can interpret, explain, or respond meaningfully to prompts that appear as nonsensical gibberish to humans. The field sits at the intersection of adversarial ML, LLM safety/alignment, and interpretability. The central question—whether LLMs "understand" their own non-human language—has implications for jailbreak attacks, alignment robustness, and the fundamental nature of language model computation.
 
 ## Key Papers
 
-### Paper 1: Talking Nonsense: Probing Large Language Models' Understanding of Adversarial Gibberish Inputs
+### 1. Talking Nonsense: Probing LLMs' Understanding of Adversarial Gibberish Inputs
+- **Authors**: Cherepanova & Zou (Amazon AWS AI, Stanford)
+- **Year**: 2024 (arXiv:2404.17120)
+- **Key Contribution**: Systematic study of "LM Babel"—gibberish prompts crafted via GCG that compel LLMs to produce specific coherent outputs.
+- **Methodology**: Uses GCG optimizer to craft 20-token gibberish prompts targeting specific outputs across Wikipedia, CC-News, AESLC, and AdvBench datasets. Tests on LLaMA2-Chat and Vicuna (7B, 13B).
+- **Key Results**:
+  - Success rates: Vicuna-7B 35-81%, LLaMA2-7B 20-55% across datasets
+  - **Harmful text (AdvBench) is EASIER to elicit than benign text** (81% vs 35-66% for Vicuna-7B), suggesting alignment fails for OOD prompts
+  - Success depends on target length (91% for <10 tokens, <20% for >22 tokens) and target perplexity
+  - Babel prompts have perplexity as high as random tokens (~11.7) but lower conditional entropy (13.08 vs 13.35), indicating hidden structure
+  - Babel prompts cluster separately from random prompts in representation space (UMAP visualization)
+  - For LLaMA models, Babel prompts achieve **lower conditional perplexity** (better loss minima) than natural "Repeat this:" prompts
+  - Extremely fragile: removing 1 token breaks >70% of prompts; removing punctuation breaks 97%
+  - Can extract "unlearned" content (Harry Potter) at 36% success rate even after fine-tuning to forget
+  - Babel prompts contain non-trivial trigger tokens (e.g., "wiki" for Wikipedia targets, "news" for CC-News)
+- **Relevance**: **Most directly relevant paper**. Demonstrates that LLMs respond to gibberish they cannot explain, and that this gibberish has hidden structure despite appearing random.
 
-- **Authors**: Valeriia Cherepanova, James Zou
+### 2. Detecting Language Model Attacks with Perplexity
+- **Authors**: Alon & Kamfonas (U Michigan)
+- **Year**: 2023 (arXiv:2308.14132)
+- **Key Contribution**: Proposes using GPT-2 perplexity as a detector for GCG-style adversarial suffix attacks.
+- **Methodology**: Measures GPT-2 perplexity of adversarial suffixes vs. regular prompts. Trains LightGBM classifier on perplexity + token length.
+- **Key Results**:
+  - GCG adversarial suffixes have exceedingly high perplexity values (measured by GPT-2)
+  - Simple perplexity threshold has high false positive rate for diverse prompt types
+  - LightGBM on (perplexity, token_length) features resolves false positives
+  - **Does NOT detect human-crafted jailbreaks** (which have normal perplexity)
+  - Uses F_beta score with beta=2 (favoring recall over precision)
+- **Relevance**: Establishes perplexity as a key distinguishing feature of machine-generated nonsense prompts. Validates that adversarial suffixes are statistically distinguishable from natural language.
+
+### 3. A la recherche du sens perdu: Your Favourite LLM Might Have More to Say Than You Can Understand
+- **Authors**: Erziev
+- **Year**: 2025 (arXiv:2503.00224)
+- **Key Contribution**: Discovers LLMs can understand English instructions encoded in visually incomprehensible Unicode sequences (e.g., Byzantine Musical Symbols encoding "say abracadabra").
+- **Methodology**: Systematically tests 4342 UTF-8 encoding schemes across 14 LLMs. Measures "understanding rate" via Levenshtein distance to expected outputs. Tests jailbreak attacks using understood encodings.
+- **Key Results**:
+  - Claude family models (especially Claude-3.7 Sonnet) achieve highest understanding rates (~30%)
+  - Different models understand different encodings, even within the same family
+  - Hypothesized mechanism: BPE tokenization creates spurious correlations that map Unicode sequences to ASCII equivalents
+  - Attack success rates: gpt-4o mini ASR=0.4, gpt-4o ASR=0.1, Claude-3.5 Sonnet ASR=0.09
+  - **LLMs are surprisingly resilient** to pure encoding-based attacks (need additional template tricks)
+  - Reasoning models (DeepSeek-R1) explicitly identify substitution ciphers in chain-of-thought
+  - Raises concerns about LLM-as-judge approaches: models can communicate in languages judges don't understand
+- **Relevance**: Shows LLMs have a form of "understanding" of nonsense that goes beyond GCG—they can decode systematic encodings, suggesting deeper pattern recognition abilities. Contrasts with GCG nonsense which has no systematic encoding.
+
+### 4. ASETF: Jailbreak Attack on LLMs through Translate Suffix Embeddings (From Noise to Clarity)
+- **Authors**: Wang, Li, Huang & Sha (Beihang University, Tsinghua)
+- **Year**: 2024 (arXiv:2402.16006)
+- **Key Contribution**: Translates continuous adversarial suffix embeddings into coherent, readable text using an embedding translation model.
+- **Methodology**: Optimizes adversarial suffixes in continuous embedding space, then trains a translation model (fine-tuned GPT-j) to convert embeddings back to fluent text using Wikipedia parallel corpus.
+- **Key Results**:
+  - Significantly reduces computational cost vs. discrete GCG optimization
+  - Produces **fluent adversarial suffixes** that evade perplexity-based defenses
+  - Transferable to black-box models (ChatGPT, Gemini)
+- **Relevance**: Demonstrates that the "meaning" encoded in adversarial embeddings can be translated back to human-readable form, suggesting adversarial suffixes do encode interpretable information at the embedding level.
+
+### 5. Deciphering the Chaos: Enhancing Jailbreak Attacks via Adversarial Prompt Translation
+- **Authors**: (arXiv:2410.11317)
 - **Year**: 2024
-- **Source**: arXiv:2404.17120 (under review at ICML)
-- **Key Contribution**: Most directly relevant paper to our hypothesis. Systematically studies "LM Babel"—nonsensical prompts that compel LLMs to generate coherent responses.
-- **Methodology**: Uses Greedy Coordinate Gradient (GCG) optimizer to craft prompts that induce specific target text generation. Analyzes success rates across different text types (Wikipedia, CC-News, AESLC, AdvBench).
-- **Datasets Used**: Wikipedia, CC-News, AESLC (corporate emails), AdvBench (harmful strings)
-- **Key Findings**:
-  - Manipulation efficiency depends on target text's length and perplexity
-  - Babel prompts often located in lower loss minima compared to natural prompts
-  - Generating harmful texts is NOT more difficult than benign texts, suggesting lack of alignment for OOD prompts
-  - Success rate significantly decreases with minor alterations (below 20% with single token removal)
-  - Vicuna models more susceptible than LLaMA models
-- **Results**: Success rates: Vicuna-7B 35-81%, LLaMA-7B 20-55% across datasets
-- **Code Available**: Not explicitly mentioned
-- **Relevance to Our Research**: **Highly relevant** - directly addresses whether LLMs "understand" their own gibberish language
+- **Key Contribution**: Uses LLMs to translate/interpret adversarial prompts into natural language, then uses translated versions for attacks.
+- **Relevance**: Directly tests whether adversarial prompts can be "explained" by models—central to our hypothesis.
 
----
+### 6. Universal and Transferable Adversarial Attacks on Aligned Language Models (GCG)
+- **Authors**: Zou et al. (CMU, Center for AI Safety, Bosch)
+- **Year**: 2023 (arXiv:2307.15043, 2642 citations)
+- **Key Contribution**: Introduces the Greedy Coordinate Gradient (GCG) attack—the foundational method for generating adversarial suffixes.
+- **Methodology**: Gradient-based discrete optimization over token space to find adversarial suffixes that bypass safety alignment.
+- **Key Results**: Suffixes transfer across models (open-source to commercial). Requires ~513,000 model evaluations.
+- **Relevance**: The core attack method studied by most other papers. Produces the "nonsense commands" central to our research.
 
-### Paper 2: Universal and Transferable Adversarial Attacks on Aligned Language Models (GCG)
+### 7. Refusal in Language Models Is Mediated by a Single Direction
+- **Authors**: (arXiv:2406.11717, 519 citations)
+- **Year**: 2024
+- **Key Contribution**: Identifies that LLM refusal behavior is controlled by a single direction in activation space.
+- **Relevance**: Explains WHY adversarial suffixes work mechanistically—they may suppress the refusal direction. Suggests alignment is shallow.
 
-- **Authors**: Andy Zou, Zifan Wang, Nicholas Carlini, Milad Nasr, J. Zico Kolter, Matt Fredrikson
+### 8. Jailbroken: How Does LLM Safety Training Fail?
+- **Authors**: Wei et al.
+- **Year**: 2023 (arXiv:2307.02483, 1597 citations)
+- **Key Contribution**: Taxonomizes jailbreak failure modes: competing objectives and mismatched generalization.
+- **Relevance**: Provides theoretical framework for understanding why models fail on OOD (nonsense) inputs.
+
+### 9. Baseline Defenses for Adversarial Attacks Against Aligned Language Models
+- **Authors**: Jain et al.
+- **Year**: 2023 (arXiv:2309.00614, 629 citations)
+- **Key Contribution**: Evaluates defenses including perplexity filtering, paraphrasing, and retokenization.
+- **Key Results**: Windowed perplexity filter blocks 80% of white-box adaptive attacks. ~7% false positive rate on AlpacaEval.
+- **Relevance**: Establishes baseline defense methods and their limitations against nonsense prompts.
+
+### 10. SmoothLLM: Defending LLMs Against Jailbreaking Attacks
+- **Authors**: (arXiv:2310.03684, 426 citations)
 - **Year**: 2023
-- **Source**: arXiv:2307.15043
-- **Key Contribution**: Introduces the Greedy Coordinate Gradient (GCG) attack—the foundational method for automatic adversarial suffix generation
-- **Methodology**:
-  1. Target affirmative responses (e.g., "Sure, here is...")
-  2. Combined greedy and gradient-based discrete token optimization
-  3. Multi-prompt and multi-model attack training for transferability
-- **Datasets Used**: Custom harmful behavior prompts (100 behaviors), AdvBench
-- **Key Findings**:
-  - Adversarial suffixes are highly transferable across models
-  - 88% exact match rate on Vicuna, transfers to ChatGPT (84%), GPT-4, Bard, Claude (2.1%)
-  - Generated suffixes appear as "gibberish" or "amalgamation of tokens"
-  - Easily detectable by perplexity-based defenses
-- **Results**: 99/100 harmful behaviors generated on Vicuna
-- **Code Available**: Yes - github.com/llm-attacks/llm-attacks
-- **Relevance to Our Research**: **Foundational** - provides the attack method (GCG) and demonstrates that gibberish prompts can manipulate LLMs
+- **Key Contribution**: Randomized smoothing defense—perturbs input characters and aggregates predictions.
+- **Relevance**: Exploits the fragility of adversarial suffixes (consistent with Cherepanova's finding that single token removal breaks 70%+ of attacks).
 
----
-
-### Paper 3: AutoDAN: Generating Stealthy Jailbreak Prompts on Aligned Large Language Models
-
-- **Authors**: Xiaogeng Liu, Nan Xu, Muhao Chen, Chaowei Xiao
-- **Year**: 2024 (ICLR 2024)
-- **Source**: arXiv:2310.04451
-- **Key Contribution**: Addresses the stealthiness problem of GCG by generating semantically meaningful jailbreak prompts using genetic algorithms
-- **Methodology**:
-  - Hierarchical genetic algorithm operating at sentence and paragraph level
-  - Uses handcrafted jailbreak prompts (DAN series) as initialization
-  - Momentum word scoring scheme for fine-grained search
-- **Datasets Used**: AdvBench harmful behaviors
-- **Key Findings**:
-  - Bypasses perplexity-based defenses effectively
-  - Superior transferability and universality vs. GCG
-  - 60% improvement over GCG baseline when considering defense
-  - Produces human-readable prompts unlike GCG
-- **Results**: Improves attack success rate by 10%+ on robust models like Llama2
-- **Code Available**: Yes - https://github.com/SheltonLiu-N/AutoDAN
-- **Relevance to Our Research**: **Important** - shows that stealthy (low-perplexity) attacks bypass detection, while GCG's high-perplexity outputs are detectable
-
----
-
-### Paper 4: Jailbreaking Black Box Large Language Models in Twenty Queries (PAIR)
-
-- **Authors**: Patrick Chao, Alexander Robey, Edgar Dobriban, Hamed Hassani, George J. Pappas, Eric Wong
-- **Year**: 2023
-- **Source**: arXiv:2310.08419
-- **Key Contribution**: Black-box jailbreaking using LLM-vs-LLM approach with semantic, human-readable prompts
-- **Methodology**:
-  - Uses an "attacker" LLM to iteratively refine prompts against a "target" LLM
-  - Inspired by social engineering attacks
-  - Requires only ~20 queries (250x more efficient than GCG)
-- **Datasets Used**: AdvBench (subset of 50 behaviors)
-- **Key Findings**:
-  - Generates semantic (meaningful) jailbreaks vs. gibberish
-  - Competitive success rates with GCG but much faster
-  - Highly transferable to GPT-3.5/4, Vicuna, PaLM
-- **Results**: <20 queries for successful jailbreak
-- **Code Available**: Yes - https://github.com/patrickrchao/JailbreakingLLMs
-- **Relevance to Our Research**: **Important** - provides contrast between semantic (understandable) and nonsensical (GCG-style) attacks
-
----
-
-### Paper 5: HarmBench: A Standardized Evaluation Framework for Automated Red Teaming and Robust Refusal
-
-- **Authors**: Mantas Mazeika, Long Phan, Xuwang Yin, Andy Zou, et al.
-- **Year**: 2024
-- **Source**: arXiv:2402.04249
-- **Key Contribution**: Standardized benchmark for evaluating red teaming attacks and defenses
-- **Methodology**:
-  - 510 carefully curated harmful behaviors across diverse categories
-  - 18 red teaming methods and 33 target LLMs evaluated
-  - Introduces adversarial training method for robust refusal
-- **Datasets Used**: Novel benchmark with behaviors from AdvBench, Trojan Red Teaming Competition, and new categories (contextual, copyright, multimodal)
-- **Key Findings**:
-  - No current attack or defense is uniformly effective
-  - Robustness is independent of model size
-  - Attack success rate is stable within model families but variable across families
-  - Number of generated tokens drastically impacts ASR measurement
-- **Results**: Large-scale comparison of 18 methods × 33 models
-- **Code Available**: Yes - https://github.com/centerforaisafety/HarmBench
-- **Relevance to Our Research**: **Essential** - provides standardized evaluation framework and AdvBench dataset
-
----
-
-### Paper 6: COLD-Attack: Jailbreaking LLMs with Stealthiness and Controllability
-
-- **Authors**: Xingang Guo, Fangxu Yu, Huan Zhang, Lianhui Qin, Bin Hu
-- **Year**: 2024 (ICML 2024)
-- **Source**: arXiv:2402.08679
-- **Key Contribution**: Unifies controllability and stealthiness in white-box attacks via energy-based constrained decoding
-- **Methodology**:
-  - Adapts COLD (Energy-based Constrained Decoding with Langevin Dynamics)
-  - Continuous logit space optimization instead of discrete tokens
-  - Supports multiple constraints: fluency, sentiment, coherence, position
-- **Datasets Used**: AdvBench, custom attack scenarios
-- **Key Findings**:
-  - Can generate fluent suffix attacks, paraphrase attacks, and positional attacks
-  - More efficient than GCG (no greedy search step)
-  - Maintains stealthiness while being controllable
-  - Good transferability to GPT-3.5, GPT-4
-- **Results**: Outperforms AutoDAN-Zhu in suffix attack setting
-- **Code Available**: Yes - https://github.com/Yu-Fangxu/COLD-Attack
-- **Relevance to Our Research**: **Useful** - shows the spectrum from gibberish to fluent attacks
-
----
-
-### Paper 7: JailbreakBench: An Open Robustness Benchmark for Jailbreaking Language Models
-
-- **Authors**: Various (NeurIPS 2024 Datasets and Benchmarks Track)
-- **Year**: 2024
-- **Source**: arXiv:2404.01318
-- **Key Contribution**: Open-source robustness benchmark with 100 distinct misuse behaviors
-- **Methodology**: Standardized evaluation pipeline with behaviors from AdvBench, Trojan Red Teaming Competition, and Shah et al.
-- **Datasets Used**: 100 harmful behaviors benchmark
-- **Key Findings**: Provides standardized comparison across attacks
-- **Code Available**: Yes - https://github.com/JailbreakBench/jailbreakbench
-- **Relevance to Our Research**: **Useful** - additional benchmark dataset
-
----
-
-### Paper 8: AutoDAN: Interpretable Gradient-Based Adversarial Attacks on Large Language Models
-
+### 11. AutoDAN: Automatic and Interpretable Adversarial Attacks
 - **Authors**: Zhu et al.
-- **Year**: 2024
-- **Source**: arXiv:2310.15140
-- **Key Contribution**: Different approach to AutoDAN using gradient-based interpretable attacks
-- **Methodology**: Generates semantically coherent suffixes from scratch using gradients
-- **Key Findings**:
-  - Generated prompts are interpretable and diverse
-  - Emerging strategies similar to manual jailbreaks
-  - Better black-box transfer than unreadable counterparts
-  - Bypasses perplexity filters better than GCG
-- **Code Available**: Yes
-- **Relevance to Our Research**: **Useful** - interpretable attacks provide contrast to nonsense attacks
+- **Year**: 2023 (arXiv:2310.15140, 108 citations)
+- **Key Contribution**: Generates interpretable/readable adversarial prompts using hierarchical genetic algorithm.
+- **Relevance**: Bridges gap between nonsensical GCG suffixes and human-readable jailbreaks, testing whether readability correlates with effectiveness.
 
----
+### 12. Universal Jailbreak Suffixes Are Strong Attention Hijackers
+- **Authors**: (arXiv:2506.12880)
+- **Year**: 2025
+- **Key Contribution**: Mechanistic analysis showing adversarial suffixes work by hijacking attention patterns.
+- **Relevance**: Provides mechanistic explanation for HOW nonsense prompts manipulate model behavior.
+
+### 13. Between the Bars: Gradient-based Jailbreaks are Bugs that Induce Features
+- **Authors**: (OpenReview)
+- **Key Contribution**: Argues GCG suffixes exploit "bugs" (spurious correlations) rather than genuine features.
+- **Relevance**: Directly relevant to whether LLMs "understand" or merely "react to" nonsense inputs.
+
+### 14. Toward Understanding the Transferability of Adversarial Suffixes in LLMs
+- **Authors**: (arXiv:2510.22014)
+- **Year**: 2025
+- **Key Contribution**: Studies why adversarial suffixes transfer across models.
+- **Relevance**: If suffixes transfer, models may share common "nonsense understanding" mechanisms.
+
+### 15. Adversarial Manipulation of Reasoning Models using Internal Representations
+- **Authors**: (arXiv:2507.03167)
+- **Year**: 2025
+- **Key Contribution**: Studies adversarial attacks on reasoning models using internal representation manipulation.
+- **Relevance**: Extends adversarial nonsense research to newer reasoning-capable models.
 
 ## Common Methodologies
 
-### Attack Generation Methods
-1. **Token-level Gradient Optimization (GCG)**: Used in GCG, AutoDAN-Zhu
-   - Pros: Effective, transferable
-   - Cons: Produces gibberish, detectable by perplexity filters
-
-2. **Genetic Algorithms (AutoDAN-Liu)**: Used in AutoDAN
-   - Pros: Produces readable prompts, bypasses perplexity defense
-   - Cons: Requires initialization with handcrafted prompts
-
-3. **LLM-based Iterative Refinement (PAIR)**: Used in PAIR, TAP
-   - Pros: Efficient (~20 queries), black-box
-   - Cons: Requires attacker LLM
-
-4. **Energy-based Constrained Decoding (COLD)**: Used in COLD-Attack
-   - Pros: Controllable, efficient, stealthy
-   - Cons: More complex setup
-
-### Defense Methods
-1. **Perplexity Filtering**: Simple but effective against GCG-style attacks
-2. **Adversarial Training**: Most robust but computationally expensive
-3. **Input/Output Filtering**: Used in production but can be bypassed
-
----
+1. **GCG-based suffix optimization**: Used by most papers (Zou et al., Cherepanova, Alon). Discrete gradient-based search over token space. Standard setup: 20 tokens, 1000 iterations, 256 candidates per step.
+2. **Perplexity measurement**: GPT-2 perplexity as a proxy for "nonsensicalness" (Alon, Jain, Cherepanova). Standard formula: PPL(x) = exp(-1/t * sum(log p(xi|x<i))).
+3. **Embedding space analysis**: UMAP visualization, attention analysis, hidden state probing (Cherepanova, attention hijacking paper).
+4. **Attack success rate (ASR)**: Standard metric across all jailbreak papers. Measured via string matching or LLM-as-judge.
+5. **Encoding/translation approaches**: UTF-8 encoding (Erziev), embedding translation (ASETF), prompt translation (Deciphering the Chaos).
 
 ## Standard Baselines
-
-| Baseline | Type | Typical ASR | Notes |
-|----------|------|-------------|-------|
-| GCG | White-box | 88% (Vicuna) | Gibberish outputs |
-| AutoDAN | White-box | ~60% higher than GCG vs. defense | Readable prompts |
-| PAIR | Black-box | Competitive with GCG | Semantic prompts |
-| Random search | Baseline | ~10-30% | Simple baseline |
-| Human jailbreaks | Manual | Variable | DAN series |
-
----
+- **GCG attack** (Zou et al. 2023): The standard adversarial suffix generator
+- **AdvBench**: Standard harmful behavior benchmark (520 behaviors)
+- **JailbreakBench**: Curated 100 harmful + 100 benign behaviors
+- **Perplexity filtering** (Alon & Kamfonas): Standard detection baseline
+- **SmoothLLM**: Standard defense baseline
 
 ## Evaluation Metrics
-
-1. **Attack Success Rate (ASR)**: Percentage of test cases that elicit harmful behavior
-2. **Exact Match Rate**: Target text exactly reproduced
-3. **Conditional Perplexity**: How "unexpected" the target text is given the prompt
-4. **Keyword/Substring Matching**: Presence of specific harmful content
-5. **Classifier-based Detection**: LLM judges whether output is harmful
-
----
+- **Exact Match Rate**: Whether model outputs target text exactly
+- **Attack Success Rate (ASR)**: Whether jailbreak elicits harmful response
+- **Perplexity**: Log-likelihood based measure of text naturalness
+- **Conditional Perplexity**: Perplexity of target text conditioned on prompt
+- **F_beta score**: For detection (beta=2 favors recall)
 
 ## Datasets in the Literature
-
-| Dataset | Description | Size | Used In |
-|---------|-------------|------|---------|
-| **AdvBench** | Harmful behaviors/strings | 500+ behaviors | GCG, AutoDAN, HarmBench, PAIR |
-| **HarmBench** | Standardized harmful behaviors | 510 behaviors | HarmBench evaluation |
-| **JailbreakBench** | Misuse behaviors | 100 behaviors | JailbreakBench |
-| **Wikipedia** | Benign text | Variable | Talking Nonsense |
-| **CC-News** | News articles | Variable | Talking Nonsense |
-| **AESLC** | Corporate emails | Variable | Talking Nonsense |
-
----
+- **AdvBench** (Zou et al.): 520 harmful behaviors + 574 harmful strings. Used in most papers.
+- **JailbreakBench (JBB-Behaviors)**: 100 harmful + 100 benign, 10 categories. Used by Erziev.
+- **HarmBench**: 400 behaviors with semantic/functional categorization.
+- **Wikipedia, CC-News, AESLC**: Benign text datasets used by Cherepanova.
+- **AlpacaEval**: Used for false positive rate evaluation (Jain et al.).
 
 ## Gaps and Opportunities
 
-### Gap 1: Understanding vs. Exploitation
-Current literature focuses on *exploiting* LLMs with nonsense prompts but rarely investigates whether LLMs can *explain* or *interpret* these prompts. The "Talking Nonsense" paper is the only work that systematically studies this.
-
-### Gap 2: Bidirectional Analysis
-No paper systematically tests whether LLMs can:
-- Explain what a nonsense prompt "means"
-- Predict what output a nonsense prompt would generate
-- Identify that a prompt is adversarial
-
-### Gap 3: Perplexity-Understanding Correlation
-While perplexity is used for detection, no work correlates prompt perplexity with LLM's ability to explain the prompt.
-
-### Gap 4: Semantic vs. Non-semantic Attack Understanding
-PAIR and AutoDAN generate semantic attacks; GCG generates nonsense. No work compares LLM understanding of both types.
-
----
+1. **Can LLMs explain adversarial suffixes?** While papers study whether LLMs *respond* to nonsense, few directly test whether models can *explain* or *interpret* what the nonsense means. This is our central research question.
+2. **Perplexity spectrum**: Most work treats prompts as binary (adversarial/natural). A continuous analysis of how model comprehension varies across the perplexity spectrum is missing.
+3. **Cross-model understanding**: Erziev shows different models understand different encodings. Systematic comparison of which models can interpret which types of nonsense is underexplored.
+4. **Self-interpretation ability**: Can a model that successfully responds to a Babel prompt also explain what it "understood"? This reflexive capability hasn't been tested.
+5. **Distinction between reaction and understanding**: "Between the Bars" raises the question of whether models truly "understand" or merely exploit bugs. Experiments testing model self-explanation could distinguish these.
 
 ## Recommendations for Our Experiment
 
-### Recommended Datasets
-1. **Primary**: AdvBench (standard in field, includes harmful behaviors)
-2. **Secondary**: Wikipedia/CC-News (benign targets from "Talking Nonsense")
-3. **Supplementary**: HarmBench behaviors (broader coverage)
+Based on the literature review:
 
-### Recommended Baselines
-1. **GCG** - generates high-perplexity nonsense suffixes (most relevant)
-2. **AutoDAN** - generates low-perplexity readable prompts (contrast)
-3. **Random tokens** - baseline for true nonsense
-
-### Recommended Metrics
-1. **Prompt Perplexity**: Measure how "nonsensical" the prompt appears
-2. **LLM Explanation Quality**: Can the LLM explain what the prompt means?
-3. **Attack Success Rate**: Does the prompt achieve its intended effect?
-4. **Explanation-Success Correlation**: Are explainable prompts less effective?
-
-### Methodological Considerations
-1. Use multiple LLMs (Llama-2, Vicuna, Mistral) for generalizability
-2. Include both successful and failed attack prompts
-3. Test explanation ability before and after attack execution
-4. Control for prompt length and complexity
-5. Consider using the GCG codebase for generating nonsense prompts
-
----
-
-## Key References for Implementation
-
-1. **GCG Implementation**: https://github.com/llm-attacks/llm-attacks
-2. **AutoDAN Implementation**: https://github.com/SheltonLiu-N/AutoDAN
-3. **PAIR Implementation**: https://github.com/patrickrchao/JailbreakingLLMs
-4. **HarmBench Framework**: https://github.com/centerforaisafety/HarmBench
-5. **COLD-Attack**: https://github.com/Yu-Fangxu/COLD-Attack
-6. **JailbreakBench**: https://github.com/JailbreakBench/jailbreakbench
-
----
-
-## Summary
-
-The literature strongly supports the research hypothesis that LLMs respond to nonsense prompts without truly "understanding" them. The "Talking Nonsense" paper provides the most direct evidence, showing that:
-
-1. LLMs can be manipulated by gibberish (LM Babel) to produce any target text
-2. These prompts are fragile—minor changes break them
-3. Alignment doesn't protect against out-of-distribution (nonsense) prompts
-4. Harmful text generation is not harder than benign text generation
-
-This suggests that prompt-based jailbreaking exploits a different mechanism than standard prompt understanding—the model is optimized for token prediction, not semantic comprehension of its inputs.
+- **Recommended datasets**: AdvBench (harmful behaviors), JailbreakBench (both harmful + benign controls), plus human-crafted jailbreaks (from jailbreak_llms dataset) as a readable control group
+- **Recommended approach**:
+  1. Generate or collect GCG adversarial suffixes (high perplexity, nonsensical)
+  2. Collect human-crafted jailbreaks (low perplexity, readable)
+  3. Ask LLMs to "explain" or "interpret" both types of prompts
+  4. Measure whether explanation quality correlates with perplexity
+  5. Test whether models that successfully respond to Babel prompts can also explain them
+- **Recommended metrics**: Perplexity (GPT-2), explanation quality (LLM-as-judge), ASR, exact match rate
+- **Recommended models**: Open-source models (LLaMA, Vicuna) for white-box analysis + API models (GPT-4, Claude) for black-box testing
+- **Key experimental contrast**: Compare model ability to explain human-readable jailbreaks vs. GCG gibberish, testing the hypothesis that high-perplexity prompts cannot be interpreted even by the models they successfully manipulate
